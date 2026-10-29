@@ -1,14 +1,9 @@
 // E&J Profit - Service Worker & Offline Engine
-const CACHE_NAME = 'ej-profit-v2.2.0';
+const CACHE_NAME = 'ej-profit-v3.0.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './css/styles.css',
-  './js/storage.js',
-  './js/audio.js',
-  './js/reports.js',
-  './js/app.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -45,7 +40,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Cache hit: fetch update in background
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));

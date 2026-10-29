@@ -94,7 +94,120 @@
   </script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="./css/styles.css">
+  <style id="inlined-styles">
+/* css/styles.css - Estilos optimizados para choferes DiDi */
+
+:root {
+  --didi-orange: #FF7D00;
+  --didi-orange-dark: #E05600;
+  --didi-orange-light: #FFA142;
+  --bg-dark: #0B1120;
+  --surface-dark: #1E293B;
+  --surface-border: #334155;
+  --pocket-green: #10B981;
+  --danger-red: #EF4444;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B1120;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Anti-glare driver mode adjustments */
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, textarea, select {
+  user-select: text;
+}
+
+/* Quick Touch Buttons for Driver Phone Mount */
+.btn-quick-touch {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  active:scale(0.96);
+}
+
+.btn-quick-touch:active {
+  transform: scale(0.96);
+}
+
+/* Pulse animation for active shift status */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+.shift-live-pulse {
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+/* Card Glows */
+.pocket-glow {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2);
+}
+
+.didi-glow {
+  box-shadow: 0 0 25px -5px rgba(255, 125, 0, 0.25);
+}
+
+/* Modal Transitions */
+.modal-overlay {
+  transition: opacity 0.2s ease-out;
+}
+
+.modal-content {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+}
+
+.modal-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.modal-hidden .modal-content {
+  transform: scale(0.95) translateY(12px);
+}
+
+/* Number badge */
+.badge-currency {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Glassmorphism subtle */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+</style>
 </head>
 <body class="bg-dark-base text-slate-100 min-h-screen flex flex-col font-sans antialiased pb-24 md:pb-12">
 
@@ -881,10 +994,2055 @@
   <div id="toastContainer" class="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center space-y-2 pointer-events-none"></div>
 
   <!-- Scripts -->
-  <script src="./js/storage.js"></script>
-  <script src="./js/audio.js"></script>
-  <script src="./js/reports.js"></script>
-  <script src="./js/app.js"></script>
+  <!-- BUNDLED ALL-IN-ONE SCRIPTS -->
+  <script>
+// js/storage.js - Gestión de almacenamiento local robusto para ContaDriver
+const STORAGE_KEYS = {
+  SHIFTS: 'contadriver_shifts',
+  TRIPS: 'contadriver_trips',
+  EXPENSES: 'contadriver_expenses',
+  SETTINGS: 'contadriver_settings',
+  ACTIVE_SHIFT_ID: 'contadriver_active_shift_id'
+};
+
+const DEFAULT_SETTINGS = {
+  currency: '$',
+  theme: 'dark',
+  soundEnabled: true,
+  vibrateEnabled: true,
+  dailyGoal: 1500,
+  defaultPaymentType: 'cash',
+  userName: 'Conductor'
+};
+
+class StorageService {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
+      this.saveSettings(DEFAULT_SETTINGS);
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.SHIFTS)) {
+      localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.TRIPS)) {
+      localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.EXPENSES)) {
+      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
+    }
+  }
+
+  // --- SETTINGS ---
+  getSettings() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
+    } catch (e) {
+      console.error('Error reading settings:', e);
+      return DEFAULT_SETTINGS;
+    }
+  }
+
+  saveSettings(settings) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      return true;
+    } catch (e) {
+      console.error('Error saving settings:', e);
+      return false;
+    }
+  }
+
+  // --- SHIFTS (TURNOS) ---
+  getShifts() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIFTS) || '[]');
+    } catch (e) {
+      console.error('Error reading shifts:', e);
+      return [];
+    }
+  }
+
+  getActiveShift() {
+    const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
+    if (!activeId) return null;
+    const shifts = this.getShifts();
+    return shifts.find(s => s.id === activeId && s.status === 'active') || null;
+  }
+
+  startShift({ initialCash, initialOdometer = 0, dailyGoal = 1500, notes = '' }) {
+    const shifts = this.getShifts();
+    
+    // Close any previous active shift if left open
+    const currentActive = this.getActiveShift();
+    if (currentActive) {
+      this.closeShift(currentActive.id, { notes: 'Cierre automático al iniciar nuevo turno' });
+    }
+
+    const newShift = {
+      id: 'shift_' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      startTime: new Date().toISOString(),
+      endTime: null,
+      status: 'active',
+      initialCash: Number(initialCash) || 0,
+      initialOdometer: Number(initialOdometer) || 0,
+      finalOdometer: null,
+      dailyGoal: Number(dailyGoal) || 1500,
+      notes: notes || '',
+      closingSummary: null
+    };
+
+    shifts.unshift(newShift);
+    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SHIFT_ID, newShift.id);
+    return newShift;
+  }
+
+  updateActiveShiftBaseCash(amount) {
+    const active = this.getActiveShift();
+    if (!active) return null;
+    return this.updateShift(active.id, { initialCash: Number(amount) || 0 });
+  }
+
+  updateShift(shiftId, updates) {
+    const shifts = this.getShifts();
+    const index = shifts.findIndex(s => s.id === shiftId);
+    if (index === -1) return null;
+    shifts[index] = { ...shifts[index], ...updates };
+    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
+    return shifts[index];
+  }
+
+  closeShift(shiftId, { finalOdometer = null, closingNotes = '', countedCash = null, cashDifference = null, summary = null } = {}) {
+    const shifts = this.getShifts();
+    const index = shifts.findIndex(s => s.id === shiftId);
+    if (index === -1) return null;
+
+    shifts[index].status = 'closed';
+    shifts[index].endTime = new Date().toISOString();
+    if (finalOdometer !== null) shifts[index].finalOdometer = Number(finalOdometer);
+    if (closingNotes) shifts[index].closingNotes = closingNotes;
+    if (countedCash !== null) shifts[index].countedCash = Number(countedCash);
+    if (cashDifference !== null) shifts[index].cashDifference = Number(cashDifference);
+    if (summary) shifts[index].closingSummary = summary;
+
+    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
+    if (localStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT_ID) === shiftId) {
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
+    }
+    return shifts[index];
+  }
+
+  // --- TRIPS (VIAJES) ---
+  getTrips() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.TRIPS) || '[]');
+    } catch (e) {
+      console.error('Error reading trips:', e);
+      return [];
+    }
+  }
+
+  addTrip(tripData) {
+    const trips = this.getTrips();
+    const activeShift = this.getActiveShift();
+
+    const newTrip = {
+      id: 'trip_' + Date.now(),
+      shiftId: activeShift ? activeShift.id : (tripData.shiftId || 'no_shift'),
+      timestamp: tripData.timestamp || new Date().toISOString(),
+      appFare: Number(tripData.appFare) || 0, // Lo que dice la app DiDi
+      paymentType: tripData.paymentType || 'cash', // 'cash' | 'card'
+      amountReceived: Number(tripData.amountReceived) || Number(tripData.appFare) || 0, // Lo que dio el cliente
+      isExact: !!tripData.isExact, // Si pagó exacto
+      tip: Number(tripData.tip) || 0, // Propina
+      changeGiven: Number(tripData.changeGiven) || 0, // Cambio devuelto
+      cashPocketDelta: Number(tripData.cashPocketDelta) || 0, // Dinero real que entra al bolsillo físico
+      notes: tripData.notes || ''
+    };
+
+    trips.unshift(newTrip);
+    localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(trips));
+    return newTrip;
+  }
+
+  updateTrip(tripId, updates) {
+    const trips = this.getTrips();
+    const index = trips.findIndex(t => t.id === tripId);
+    if (index === -1) return null;
+    trips[index] = { ...trips[index], ...updates };
+    localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(trips));
+    return trips[index];
+  }
+
+  deleteTrip(tripId) {
+    let trips = this.getTrips();
+    trips = trips.filter(t => t.id !== tripId);
+    localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(trips));
+    return true;
+  }
+
+  // --- EXPENSES (GASTOS) ---
+  getExpenses() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSES) || '[]');
+    } catch (e) {
+      console.error('Error reading expenses:', e);
+      return [];
+    }
+  }
+
+  addExpense(expenseData) {
+    const expenses = this.getExpenses();
+    const activeShift = this.getActiveShift();
+
+    const newExpense = {
+      id: 'exp_' + Date.now(),
+      shiftId: activeShift ? activeShift.id : (expenseData.shiftId || 'no_shift'),
+      timestamp: expenseData.timestamp || new Date().toISOString(),
+      category: expenseData.category || 'gasoline',
+      amount: Number(expenseData.amount) || 0,
+      paymentMethod: expenseData.paymentMethod || 'cash', // 'cash' (descuenta de bolsillos) | 'card'
+      description: expenseData.description || ''
+    };
+
+    expenses.unshift(newExpense);
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+    return newExpense;
+  }
+
+  updateExpense(expenseId, updates) {
+    const expenses = this.getExpenses();
+    const index = expenses.findIndex(e => e.id === expenseId);
+    if (index === -1) return null;
+    expenses[index] = { ...expenses[index], ...updates };
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+    return expenses[index];
+  }
+
+  deleteExpense(expenseId) {
+    let expenses = this.getExpenses();
+    expenses = expenses.filter(e => e.id !== expenseId);
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+    return true;
+  }
+
+  // --- BACKUP & RESTORE ---
+  exportAllData() {
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      settings: this.getSettings(),
+      shifts: this.getShifts(),
+      trips: this.getTrips(),
+      expenses: this.getExpenses(),
+      activeShiftId: localStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT_ID)
+    };
+  }
+
+  importAllData(data) {
+    try {
+      if (!data || typeof data !== 'object') throw new Error('Formato inválido');
+      if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
+      if (Array.isArray(data.shifts)) localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(data.shifts));
+      if (Array.isArray(data.trips)) localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(data.trips));
+      if (Array.isArray(data.expenses)) localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(data.expenses));
+      if (data.activeShiftId) {
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_SHIFT_ID, data.activeShiftId);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
+      }
+      return true;
+    } catch (e) {
+      console.error('Error importing data:', e);
+      return false;
+    }
+  }
+
+  clearAllData() {
+    localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+    localStorage.removeItem(STORAGE_KEYS.TRIPS);
+    localStorage.removeItem(STORAGE_KEYS.EXPENSES);
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
+    this.init();
+    return true;
+  }
+}
+
+// Global instance
+window.storageService = new StorageService();
+
+  </script>
+  <script>
+// js/audio.js - Sonidos sintéticos con Web Audio API y Vibración Háptica
+class FeedbackService {
+  constructor() {
+    this.ctx = null;
+    this.isMuted = false;
+  }
+
+  initContext() {
+    if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  vibrate(ms = 60) {
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate(ms);
+      } catch (e) {}
+    }
+  }
+
+  // Sonido de cobro exitoso (estilo moneda/caja registradora)
+  playCashSuccess() {
+    const settings = window.storageService ? window.storageService.getSettings() : { soundEnabled: true, vibrateEnabled: true };
+    if (settings.vibrateEnabled) this.vibrate([40, 30, 60]);
+    if (!settings.soundEnabled) return;
+
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      
+      // Primera nota alta
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(987.77, now); // B5
+      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.12);
+
+      // Segunda nota campana
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+      gain2.gain.setValueAtTime(0.2, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.35);
+    } catch (e) {
+      console.warn('Audio feedback failed:', e);
+    }
+  }
+
+  // Sonido de gasto registrado
+  playExpenseSound() {
+    const settings = window.storageService ? window.storageService.getSettings() : { soundEnabled: true, vibrateEnabled: true };
+    if (settings.vibrateEnabled) this.vibrate(50);
+    if (!settings.soundEnabled) return;
+
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.18); // G4
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (e) {
+      console.warn('Audio feedback failed:', e);
+    }
+  }
+
+  // Sonido de tap o botón rápido
+  playClick() {
+    const settings = window.storageService ? window.storageService.getSettings() : { soundEnabled: true };
+    if (!settings.soundEnabled) return;
+
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, now);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch (e) {}
+  }
+}
+
+window.feedbackService = new FeedbackService();
+
+  </script>
+  <script>
+// js/reports.js - Motor de reportes, cálculos y visualizaciones gráficas
+class ReportsService {
+  constructor() {
+    this.donutChart = null;
+    this.barChart = null;
+    this.expenseCatChart = null;
+  }
+
+  // Filtrar datos según período
+  getFilteredData(period = 'today', customStartDate = null, customEndDate = null) {
+    const allTrips = window.storageService.getTrips();
+    const allExpenses = window.storageService.getExpenses();
+    const allShifts = window.storageService.getShifts();
+
+    const now = new Date();
+    let startDate = new Date();
+    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    if (period === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    } else if (period === 'week') {
+      // Últimos 7 días
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'fortnight') {
+      // Quincenal: o bien 1 al 15, o 16 al fin de mes actual (o últimos 15 días)
+      // Usaremos la quincena natural corriente para mayor precisión contable de chofer
+      const currentDay = now.getDate();
+      if (currentDay <= 15) {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 15, 23, 59, 59, 999);
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 16, 0, 0, 0, 0);
+        // fin de mes
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      }
+    } else if (period === 'month') {
+      // Mes actual
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (period === 'all') {
+      startDate = new Date(2000, 0, 1);
+      endDate = new Date(2099, 11, 31, 23, 59, 59);
+    } else if (period === 'custom' && customStartDate) {
+      startDate = new Date(customStartDate + 'T00:00:00');
+      endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : new Date();
+    }
+
+    const startTs = startDate.getTime();
+    const endTs = endDate.getTime();
+
+    const trips = allTrips.filter(t => {
+      const ts = new Date(t.timestamp).getTime();
+      return ts >= startTs && ts <= endTs;
+    });
+
+    const expenses = allExpenses.filter(e => {
+      const ts = new Date(e.timestamp).getTime();
+      return ts >= startTs && ts <= endTs;
+    });
+
+    const shifts = allShifts.filter(s => {
+      const ts = new Date(s.startTime).getTime();
+      return ts >= startTs && ts <= endTs;
+    });
+
+    return {
+      period,
+      startDate,
+      endDate,
+      trips,
+      expenses,
+      shifts
+    };
+  }
+
+  // Calcular métricas
+  calculateMetrics(data) {
+    const { trips, expenses, shifts } = data;
+
+    // Métricas de viajes
+    let totalAppFare = 0; // Lo que facturó la app
+    let totalTips = 0; // Propinas adicionales
+    let totalCashReceived = 0; // Efectivo bruto dado por clientes
+    let totalCashInPocket = 0; // Efectivo neto que entró a bolsillos por viajes
+    let totalCardAppEarnings = 0; // Ganancia por tarjeta/app
+    let tripCount = trips.length;
+    let cashTripsCount = 0;
+    let cardTripsCount = 0;
+
+    trips.forEach(t => {
+      const fare = Number(t.appFare) || 0;
+      const tip = Number(t.tip) || 0;
+      const cashDelta = Number(t.cashPocketDelta) || 0;
+      const received = Number(t.amountReceived) || fare;
+
+      totalAppFare += fare;
+      totalTips += tip;
+
+      if (t.paymentType === 'cash') {
+        cashTripsCount++;
+        totalCashReceived += received;
+        totalCashInPocket += cashDelta;
+      } else {
+        cardTripsCount++;
+        totalCardAppEarnings += fare + tip;
+      }
+    });
+
+    const grossEarnings = totalAppFare + totalTips; // Ganancia bruta total
+    const avgPerTrip = tripCount > 0 ? (grossEarnings / tripCount) : 0;
+
+    // Métricas de gastos
+    let totalExpenses = 0;
+    let cashExpenses = 0;
+    let cardExpenses = 0;
+    const expenseByCategory = {
+      gasoline: 0,
+      food: 0,
+      wash: 0,
+      maintenance: 0,
+      toll: 0,
+      phone: 0,
+      didi_fee: 0,
+      other: 0
+    };
+
+    expenses.forEach(e => {
+      const amount = Number(e.amount) || 0;
+      totalExpenses += amount;
+      if (e.paymentMethod === 'cash') {
+        cashExpenses += amount;
+      } else {
+        cardExpenses += amount;
+      }
+
+      const cat = expenseByCategory.hasOwnProperty(e.category) ? e.category : 'other';
+      expenseByCategory[cat] += amount;
+    });
+
+    const netProfit = grossEarnings - totalExpenses; // Ganancia neta real
+    const profitMargin = grossEarnings > 0 ? ((netProfit / grossEarnings) * 100) : 0;
+    const expenseRatio = grossEarnings > 0 ? ((totalExpenses / grossEarnings) * 100) : (totalExpenses > 0 ? 100 : 0);
+
+    // Turnos en el período
+    let totalInitialCash = shifts.reduce((acc, s) => acc + (Number(s.initialCash) || 0), 0);
+
+    return {
+      tripCount,
+      cashTripsCount,
+      cardTripsCount,
+      totalAppFare,
+      totalTips,
+      grossEarnings,
+      avgPerTrip,
+      totalExpenses,
+      cashExpenses,
+      cardExpenses,
+      netProfit,
+      profitMargin,
+      expenseRatio,
+      expenseByCategory,
+      totalCashInPocket,
+      totalCardAppEarnings,
+      totalInitialCash
+    };
+  }
+
+  // Renderizar o actualizar los gráficos
+  renderCharts(metrics, data) {
+    if (typeof Chart === 'undefined') {
+      console.warn('Chart.js no está cargado');
+      return;
+    }
+
+    this.renderDonutChart(metrics);
+    this.renderCategoryChart(metrics);
+    this.renderTrendChart(data);
+  }
+
+  // Gráfica de Donut: Porcentajes de Ganancia Neta vs Gastos
+  renderDonutChart(metrics) {
+    const canvas = document.getElementById('chartProfitExpenses');
+    if (!canvas) return;
+
+    if (this.donutChart) {
+      this.donutChart.destroy();
+    }
+
+    const netProfit = Math.max(0, metrics.netProfit);
+    const expenses = metrics.totalExpenses;
+
+    const hasData = (netProfit + expenses) > 0;
+    const displayData = hasData ? [netProfit, expenses] : [1, 0];
+    const displayColors = hasData 
+      ? ['#10B981', '#EF4444'] 
+      : ['#334155', '#1E293B'];
+    const labels = hasData 
+      ? [`Ganancia Neta (${metrics.profitMargin.toFixed(1)}%)`, `Gastos (${metrics.expenseRatio.toFixed(1)}%)`] 
+      : ['Sin datos', ''];
+
+    const ctx = canvas.getContext('2d');
+    this.donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: displayData,
+          backgroundColor: displayColors,
+          borderWidth: 2,
+          borderColor: '#1E293B',
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#94A3B8',
+              font: { family: 'system-ui', size: 12, weight: '500' },
+              padding: 14
+            }
+          },
+          tooltip: {
+            enabled: hasData,
+            callbacks: {
+              label: function(context) {
+                const val = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                return ` ${context.label}: $${val.toLocaleString()} (${pct}%)`;
+              }
+            }
+          }
+        },
+        cutout: '72%'
+      }
+    });
+
+    // Actualizar badges de porcentaje
+    const profitPctEl = document.getElementById('reportProfitPercentBadge');
+    const expensePctEl = document.getElementById('reportExpensePercentBadge');
+    if (profitPctEl) {
+      profitPctEl.textContent = `${metrics.profitMargin.toFixed(1)}%`;
+      profitPctEl.className = `font-bold text-sm ${metrics.profitMargin >= 50 ? 'text-emerald-400' : 'text-amber-400'}`;
+    }
+    if (expensePctEl) {
+      expensePctEl.textContent = `${metrics.expenseRatio.toFixed(1)}%`;
+      expensePctEl.className = `font-bold text-sm ${metrics.expenseRatio <= 40 ? 'text-slate-400' : 'text-rose-400'}`;
+    }
+  }
+
+  // Gráfica de categorías de gastos
+  renderCategoryChart(metrics) {
+    const canvas = document.getElementById('chartExpenseCategories');
+    if (!canvas) return;
+
+    if (this.expenseCatChart) {
+      this.expenseCatChart.destroy();
+    }
+
+    const catLabels = {
+      gasoline: '⛽ Gasolina',
+      food: '🌮 Comida',
+      wash: '🧼 Lavado',
+      maintenance: '🔧 Taller',
+      toll: '🛣️ Peajes',
+      phone: '📱 Datos/Tel.',
+      didi_fee: '💳 Comisión DiDi',
+      other: '📦 Otros'
+    };
+
+    const categories = Object.keys(metrics.expenseByCategory);
+    const values = categories.map(k => metrics.expenseByCategory[k]);
+    const totalSpent = values.reduce((a, b) => a + b, 0);
+
+    const activeCategories = [];
+    const activeValues = [];
+    const colors = [
+      '#F97316', '#3B82F6', '#10B981', '#EC4899', 
+      '#8B5CF6', '#EAB308', '#6366F1', '#64748B'
+    ];
+    const activeColors = [];
+
+    categories.forEach((cat, idx) => {
+      if (metrics.expenseByCategory[cat] > 0) {
+        activeCategories.push(catLabels[cat] || cat);
+        activeValues.push(metrics.expenseByCategory[cat]);
+        activeColors.push(colors[idx % colors.length]);
+      }
+    });
+
+    const ctx = canvas.getContext('2d');
+
+    if (activeValues.length === 0) {
+      // Empty state
+      this.expenseCatChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Sin gastos registrados'],
+          datasets: [{ data: [1], backgroundColor: ['#334155'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          cutout: '75%'
+        }
+      });
+      return;
+    }
+
+    this.expenseCatChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: activeCategories,
+        datasets: [{
+          data: activeValues,
+          backgroundColor: activeColors,
+          borderWidth: 2,
+          borderColor: '#1E293B',
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#94A3B8',
+              font: { family: 'system-ui', size: 11 },
+              boxWidth: 12,
+              padding: 10
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const val = context.parsed;
+                const pct = totalSpent > 0 ? ((val / totalSpent) * 100).toFixed(1) : 0;
+                return ` ${context.label}: $${val.toLocaleString()} (${pct}%)`;
+              }
+            }
+          }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+
+  // Gráfica de tendencia temporal (Ingresos vs Gastos por día o agrupado)
+  renderTrendChart(data) {
+    const canvas = document.getElementById('chartTrend');
+    if (!canvas) return;
+
+    if (this.barChart) {
+      this.barChart.destroy();
+    }
+
+    // Agrupar por fecha YYYY-MM-DD
+    const dayMap = {};
+
+    // Obtener lista ordenada de días dentro del rango
+    let start = new Date(data.startDate);
+    let end = new Date(data.endDate);
+
+    if (data.period === 'all') {
+      // Para vista 'Todo', graficar los últimos 14 días
+      end = new Date();
+      start = new Date();
+      start.setDate(end.getDate() - 13);
+    }
+
+    const cur = new Date(start);
+    cur.setHours(0, 0, 0, 0);
+
+    const maxDays = 31;
+    let dayCount = 0;
+    while (cur <= end && dayCount < maxDays) {
+      const key = cur.toISOString().split('T')[0];
+      dayMap[key] = {
+        label: cur.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }),
+        income: 0,
+        expenses: 0
+      };
+      cur.setDate(cur.getDate() + 1);
+      dayCount++;
+    }
+
+    // Sumar ingresos
+    data.trips.forEach(t => {
+      const day = t.timestamp.split('T')[0];
+      if (dayMap[day]) {
+        dayMap[day].income += (Number(t.appFare) || 0) + (Number(t.tip) || 0);
+      }
+    });
+
+    // Sumar gastos
+    data.expenses.forEach(e => {
+      const day = e.timestamp.split('T')[0];
+      if (dayMap[day]) {
+        dayMap[day].expenses += Number(e.amount) || 0;
+      }
+    });
+
+    const daysKeys = Object.keys(dayMap);
+    const labels = daysKeys.map(k => dayMap[k].label);
+    const incomeData = daysKeys.map(k => dayMap[k].income);
+    const expenseData = daysKeys.map(k => dayMap[k].expenses);
+
+    const ctx = canvas.getContext('2d');
+    this.barChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ganancias Brutas ($)',
+            data: incomeData,
+            backgroundColor: '#FF7D00',
+            borderRadius: 6,
+            maxBarThickness: 32
+          },
+          {
+            label: 'Gastos ($)',
+            data: expenseData,
+            backgroundColor: '#EF4444',
+            borderRadius: 6,
+            maxBarThickness: 32
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94A3B8', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(255, 255, 255, 0.06)' },
+            ticks: {
+              color: '#94A3B8',
+              font: { size: 11 },
+              callback: val => '$' + val
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#94A3B8', font: { size: 12 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: context => ` ${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+window.reportsService = new ReportsService();
+
+  </script>
+  <script>
+// js/app.js - Controlador principal de la aplicación ContaDriver / E&J Profit DiDi
+
+// Función segura para crear iconos Lucide sin romper si la librería está offline o cargando
+function safeCreateIcons() {
+  if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+    try {
+      lucide.createIcons();
+    } catch (e) {
+      console.warn('Lucide notice:', e);
+    }
+  }
+}
+window.safeCreateIcons = safeCreateIcons;
+
+// Funciones globales seguras para cerrar y abrir modales
+window.closeModal = function(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.add('modal-hidden');
+  }
+};
+
+window.showModal = function(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.remove('modal-hidden');
+  }
+};
+
+// Acciones globales invocables directamente desde cualquier botón HTML
+window.openTripModal = window._openTripModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openTripModal();
+};
+
+window.openExpenseModal = window._openExpenseModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openExpenseModal();
+};
+
+window.openShiftModal = window._openShiftModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openShiftModal();
+};
+
+window.openArqueoModal = window._openArqueoModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openArqueoModal();
+};
+
+window.promptDailyGoal = window._promptDailyGoal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.promptDailyGoal();
+};
+
+window.switchTab = window._switchTab = function(tabName) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.switchTab(tabName);
+};
+
+window.saveTrip = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveTrip();
+};
+
+window.saveExpense = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveExpense();
+};
+
+window.saveShiftConfig = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveShiftConfig();
+};
+
+window.closeShiftDefinitive = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.closeShiftDefinitive();
+};
+
+window.calculateArqueoDiff = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.calculateArqueoDiff();
+};
+
+window.exportBackupJSON = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.exportBackupJSON();
+};
+
+window.importBackupJSON = function(event) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.importBackupJSON(event);
+};
+
+window.toggleSound = function(checked) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.toggleSound(checked);
+};
+
+window.toggleVibrate = function(checked) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.toggleVibrate(checked);
+};
+
+window.changeReportPeriod = function(period) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.changeReportPeriod(period);
+};
+
+window.exportReportCSV = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.exportReportCSV();
+};
+
+window.setHistoryFilter = function(filter) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.setHistoryFilter(filter);
+};
+
+window.deleteItem = function(type, id) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.deleteItem(type, id);
+};
+
+class ContaDriverApp {
+  constructor() {
+    this.currentTab = 'dashboard';
+    this.activeReportPeriod = 'today';
+    this.historyFilter = 'all';
+
+    // Trip form state
+    this.tripForm = {
+      paymentType: 'cash', // 'cash' | 'card'
+      diffDecision: 'tip', // 'tip' | 'change'
+      isExact: false
+    };
+
+    // Expense form state
+    this.expenseForm = {
+      category: 'gasoline',
+      paymentMethod: 'cash'
+    };
+
+    this.categories = [
+      { id: 'gasoline', label: 'Gasolina', icon: 'fuel', color: 'text-amber-400' },
+      { id: 'food', label: 'Comida', icon: 'utensils', color: 'text-orange-400' },
+      { id: 'wash', label: 'Lavado', icon: 'droplets', color: 'text-blue-400' },
+      { id: 'maintenance', label: 'Taller', icon: 'wrench', color: 'text-purple-400' },
+      { id: 'toll', label: 'Casetas', icon: 'milestone', color: 'text-yellow-400' },
+      { id: 'phone', label: 'Datos/Tel', icon: 'smartphone', color: 'text-cyan-400' },
+      { id: 'didi_fee', label: 'Deuda DiDi', icon: 'credit-card', color: 'text-rose-400' },
+      { id: 'other', label: 'Otros', icon: 'tag', color: 'text-slate-400' }
+    ];
+
+    this.init();
+  }
+
+  init() {
+    // Ensure active shift exists
+    let activeShift = window.storageService.getActiveShift();
+    if (!activeShift) {
+      const settings = window.storageService.getSettings();
+      activeShift = window.storageService.startShift({
+        initialCash: 0,
+        dailyGoal: settings.dailyGoal || 1500
+      });
+    }
+
+    this.renderExpenseCategories();
+    this.loadSettingsUI();
+    this.refreshAll();
+
+    // Event listeners
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeAllModals();
+      }
+    });
+  }
+
+  // --- TABS NAVIGATION ---
+  switchTab(tabName) {
+    window.feedbackService.playClick();
+    this.currentTab = tabName;
+
+    // View containers
+    const vDash = document.getElementById('viewDashboard');
+    const vRep = document.getElementById('viewReports');
+    const vHist = document.getElementById('viewHistory');
+
+    // Buttons
+    const btnDash = document.getElementById('tabBtnDashboard');
+    const btnRep = document.getElementById('tabBtnReports');
+    const btnHist = document.getElementById('tabBtnHistory');
+
+    // Reset styles
+    [btnDash, btnRep, btnHist].forEach(btn => {
+      if (btn) btn.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+    });
+
+    if (vDash) vDash.classList.add('hidden');
+    if (vRep) vRep.classList.add('hidden');
+    if (vHist) vHist.classList.add('hidden');
+
+    if (tabName === 'dashboard') {
+      if (vDash) vDash.classList.remove('hidden');
+      if (btnDash) btnDash.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      this.refreshDashboard();
+    } else if (tabName === 'reports') {
+      if (vRep) vRep.classList.remove('hidden');
+      if (btnRep) btnRep.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      this.refreshReports();
+    } else if (tabName === 'history') {
+      if (vHist) vHist.classList.remove('hidden');
+      if (btnHist) btnHist.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      this.refreshHistory();
+    }
+
+    safeCreateIcons();
+  }
+
+  // --- REFRESH EVERYTHING ---
+  refreshAll() {
+    this.refreshHeader();
+    this.refreshDashboard();
+    if (this.currentTab === 'reports') this.refreshReports();
+    if (this.currentTab === 'history') this.refreshHistory();
+  }
+
+  // --- HEADER & SHIFT STATUS ---
+  refreshHeader() {
+    const activeShift = window.storageService.getActiveShift();
+    const baseEl = document.getElementById('headerInitialCash');
+    const statusTextEl = document.getElementById('shiftStatusText');
+
+    if (activeShift) {
+      if (baseEl) baseEl.textContent = `$${(activeShift.initialCash || 0).toLocaleString()}`;
+      if (statusTextEl) statusTextEl.textContent = `Turno de hoy (${activeShift.date})`;
+    } else {
+      if (baseEl) baseEl.textContent = '$0';
+      if (statusTextEl) statusTextEl.textContent = 'Sin turno activo';
+    }
+  }
+
+  // --- DASHBOARD DATA CALCULATION ---
+  refreshDashboard() {
+    this.refreshHeader();
+
+    const activeShift = window.storageService.getActiveShift();
+    const initialCash = activeShift ? Number(activeShift.initialCash) || 0 : 0;
+    const dailyGoal = activeShift ? Number(activeShift.dailyGoal) || 1500 : 1500;
+
+    // Filter today's trips and expenses
+    const todayData = window.reportsService.getFilteredData('today');
+    const metrics = window.reportsService.calculateMetrics(todayData);
+
+    // 1. Dinero en Bolsillo
+    const pocketCashNow = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
+
+    // 2. Facturado por la App
+    const totalAppFare = metrics.totalAppFare;
+
+    // 3. Propinas
+    const totalTips = metrics.totalTips;
+
+    // 4. Ganancia Bruta
+    const grossEarnings = metrics.grossEarnings;
+
+    // 5. Ganancia Neta
+    const netProfit = metrics.netProfit;
+
+    // Actualizar elementos del Dashboard
+    const pocketEl = document.getElementById('dashPocketTotal');
+    const baseCashEl = document.getElementById('dashBaseCash');
+    const cashCollectedEl = document.getElementById('dashCashCollected');
+    const cashSpentEl = document.getElementById('dashCashSpent');
+
+    if (pocketEl) {
+      pocketEl.textContent = `$${pocketCashNow.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      if (pocketCashNow < 0) {
+        pocketEl.classList.replace('text-emerald-400', 'text-rose-400');
+      } else {
+        pocketEl.classList.replace('text-rose-400', 'text-emerald-400');
+      }
+    }
+    if (baseCashEl) baseCashEl.textContent = `$${initialCash.toLocaleString()}`;
+    if (cashCollectedEl) cashCollectedEl.textContent = `+$${metrics.totalCashInPocket.toLocaleString()}`;
+    if (cashSpentEl) cashSpentEl.textContent = `-$${metrics.cashExpenses.toLocaleString()}`;
+
+    // Card DiDi App
+    const didiTotalEl = document.getElementById('dashDidiTotal');
+    const tripBadgeEl = document.getElementById('dashTripCountBadge');
+    const tipsTotalEl = document.getElementById('dashTipsTotal');
+    const expensesTotalEl = document.getElementById('dashExpensesTotal');
+    const netProfitEl = document.getElementById('dashNetProfit');
+
+    if (didiTotalEl) didiTotalEl.textContent = `$${totalAppFare.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (tripBadgeEl) tripBadgeEl.textContent = `${metrics.tripCount} ${metrics.tripCount === 1 ? 'viaje' : 'viajes'}`;
+    if (tipsTotalEl) tipsTotalEl.textContent = `+$${totalTips.toLocaleString()}`;
+    if (expensesTotalEl) expensesTotalEl.textContent = `-$${metrics.totalExpenses.toLocaleString()}`;
+    if (netProfitEl) {
+      netProfitEl.textContent = `$${netProfit.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      netProfitEl.className = `font-extrabold ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+    }
+
+    // Goal progress
+    const goalCurrentEl = document.getElementById('goalCurrentAmount');
+    const goalTargetEl = document.getElementById('goalTargetAmount');
+    const goalPercentEl = document.getElementById('goalPercentText');
+    const goalBarEl = document.getElementById('goalProgressBar');
+
+    if (goalCurrentEl) goalCurrentEl.textContent = `$${grossEarnings.toLocaleString()}`;
+    if (goalTargetEl) goalTargetEl.textContent = `$${dailyGoal.toLocaleString()}`;
+
+    const goalPct = dailyGoal > 0 ? Math.min(100, Math.round((grossEarnings / dailyGoal) * 100)) : 0;
+    if (goalPercentEl) goalPercentEl.textContent = `(${goalPct}%)`;
+    if (goalBarEl) goalBarEl.style.width = `${goalPct}%`;
+
+    // Render Recent Activity (Today)
+    this.renderRecentTodayActivity(todayData);
+  }
+
+  // --- RECENT TODAY ACTIVITY LIST ---
+  renderRecentTodayActivity(todayData) {
+    const listEl = document.getElementById('dashRecentList');
+    const countEl = document.getElementById('dashTodayCount');
+    if (!listEl) return;
+
+    const combined = [
+      ...todayData.trips.map(t => ({ ...t, _type: 'trip' })),
+      ...todayData.expenses.map(e => ({ ...e, _type: 'expense' }))
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    if (countEl) countEl.textContent = `${combined.length} movimientos`;
+
+    if (combined.length === 0) {
+      listEl.innerHTML = `
+        <div class="py-8 text-center text-slate-500 text-xs">
+          <i data-lucide="car" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+          Aún no has registrado viajes ni gastos hoy.<br>Presiona los botones naranjas o rojos de arriba para comenzar.
+        </div>
+      `;
+      safeCreateIcons();
+      return;
+    }
+
+    listEl.innerHTML = combined.slice(0, 8).map(item => {
+      const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      if (item._type === 'trip') {
+        const isCash = item.paymentType === 'cash';
+        const tipBadge = item.tip > 0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] ml-1">+Propina $${item.tip}</span>` : '';
+        const exactBadge = item.isExact ? `<span class="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 text-[10px] ml-1">Exacto</span>` : '';
+        
+        return `
+          <div class="pt-2.5 pb-1 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-lg ${isCash ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/80 text-didi border border-didi/30'} flex items-center justify-center text-xs">
+                <i data-lucide="${isCash ? 'banknote' : 'credit-card'}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="flex items-center text-xs font-bold text-white">
+                  <span>Viaje DiDi ${item.notes ? `• ${item.notes}` : ''}</span>
+                  ${tipBadge}
+                  ${exactBadge}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  <span>${timeStr}</span> • 
+                  <span class="${isCash ? 'text-emerald-400 font-semibold' : 'text-slate-400'}">${isCash ? 'Efectivo en mano' : 'Tarjeta DiDi'}</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="block text-sm font-extrabold text-white badge-currency">$${(Number(item.appFare) + Number(item.tip)).toLocaleString()}</span>
+              <span class="text-[10px] text-slate-500">App: $${Number(item.appFare).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+      } else {
+        const catInfo = this.categories.find(c => c.id === item.category) || { label: 'Gasto', icon: 'tag' };
+        const isCash = item.paymentMethod === 'cash';
+
+        return `
+          <div class="pt-2.5 pb-1 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-lg bg-rose-950/80 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xs">
+                <i data-lucide="${catInfo.icon || 'fuel'}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-rose-300">
+                  ${catInfo.label} ${item.description ? `• ${item.description}` : ''}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  <span>${timeStr}</span> • 
+                  <span>${isCash ? 'Pagado con efectivo' : 'Pagado con tarjeta'}</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="block text-sm font-extrabold text-rose-400 badge-currency">-$${Number(item.amount).toLocaleString()}</span>
+              <span class="text-[10px] ${isCash ? 'text-rose-500/80' : 'text-slate-500'}">${isCash ? 'Descontó de bolsillo' : 'Tarjeta'}</span>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+
+    safeCreateIcons();
+  }
+
+  // --- TRIP MODAL & LOGIC ---
+  openTripModal() {
+    window.feedbackService.playClick();
+    this.tripForm = {
+      paymentType: 'cash',
+      diffDecision: 'tip',
+      isExact: false
+    };
+
+    const inputFare = document.getElementById('inputAppFare');
+    const inputReceived = document.getElementById('inputAmountReceived');
+    const inputNotes = document.getElementById('inputTripNotes');
+
+    if (inputFare) inputFare.value = '';
+    if (inputReceived) inputReceived.value = '';
+    if (inputNotes) inputNotes.value = '';
+    
+    this.setTripPaymentType('cash');
+    this.updateTripLivePreview();
+
+    this.showModal('modalTrip');
+    setTimeout(() => {
+      if (inputFare) inputFare.focus();
+    }, 200);
+  }
+
+  setTripPaymentType(type) {
+    window.feedbackService.playClick();
+    this.tripForm.paymentType = type;
+    const btnCash = document.getElementById('btnTripPayCash');
+    const btnCard = document.getElementById('btnTripPayCard');
+    const cashSection = document.getElementById('cashPaymentSection');
+
+    if (type === 'cash') {
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition';
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
+      if (cashSection) cashSection.classList.remove('hidden');
+    } else {
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-amber-500 bg-amber-950/40 text-amber-300 font-bold text-sm flex items-center justify-center gap-2 transition';
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
+      if (cashSection) cashSection.classList.add('hidden');
+    }
+
+    this.updateTripLivePreview();
+  }
+
+  onTripFareInput() {
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
+    const receivedInput = document.getElementById('inputAmountReceived');
+    
+    if (receivedInput && (this.tripForm.isExact || !receivedInput.value)) {
+      receivedInput.value = fare > 0 ? fare : '';
+    }
+
+    this.updateTripLivePreview();
+  }
+
+  onTripReceivedInput() {
+    this.tripForm.isExact = false;
+    this.updateTripLivePreview();
+  }
+
+  setExactPayment() {
+    window.feedbackService.playClick();
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
+    const receivedInput = document.getElementById('inputAmountReceived');
+    
+    if (receivedInput) receivedInput.value = fare > 0 ? fare : '';
+    this.tripForm.isExact = true;
+    this.updateTripLivePreview();
+    this.showToast('Marcado como Pago Exacto');
+  }
+
+  quickAddBill(billValue) {
+    window.feedbackService.playClick();
+    const receivedInput = document.getElementById('inputAmountReceived');
+    if (receivedInput) receivedInput.value = billValue;
+    this.tripForm.isExact = false;
+    this.updateTripLivePreview();
+  }
+
+  setDiffDecision(decision) {
+    window.feedbackService.playClick();
+    this.tripForm.diffDecision = decision;
+    const btnTip = document.getElementById('btnDiffIsTip');
+    const btnChange = document.getElementById('btnDiffIsChange');
+
+    if (decision === 'tip') {
+      if (btnTip) btnTip.className = 'p-2 rounded-lg bg-amber-500/20 border-2 border-amber-500 text-amber-300 font-bold text-[11px] text-center flex flex-col items-center';
+      if (btnChange) btnChange.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
+    } else {
+      if (btnChange) btnChange.className = 'p-2 rounded-lg bg-blue-500/20 border-2 border-blue-500 text-blue-300 font-bold text-[11px] text-center flex flex-col items-center';
+      if (btnTip) btnTip.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
+    }
+
+    this.updateTripLivePreview();
+  }
+
+  updateTripLivePreview() {
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
+    const isCash = this.tripForm.paymentType === 'cash';
+    let received = parseFloat(document.getElementById('inputAmountReceived')?.value) || 0;
+
+    const previewApp = document.getElementById('previewAppFare');
+    const previewPocket = document.getElementById('previewPocketCash');
+    const tripDiffNotice = document.getElementById('tripDiffNotice');
+    const diffText = document.getElementById('diffAmountText');
+
+    let tip = 0;
+    let changeGiven = 0;
+    let pocketDelta = 0;
+
+    if (!isCash) {
+      pocketDelta = 0;
+      if (tripDiffNotice) tripDiffNotice.classList.add('hidden');
+    } else {
+      if (received > fare && fare > 0) {
+        const diff = received - fare;
+        if (tripDiffNotice) tripDiffNotice.classList.remove('hidden');
+        if (diffText) diffText.textContent = `+$${diff.toFixed(2)}`;
+
+        if (this.tripForm.diffDecision === 'tip') {
+          tip = diff;
+          changeGiven = 0;
+          pocketDelta = received;
+        } else {
+          tip = 0;
+          changeGiven = diff;
+          pocketDelta = fare;
+        }
+      } else {
+        if (tripDiffNotice) tripDiffNotice.classList.add('hidden');
+        pocketDelta = received > 0 ? received : fare;
+      }
+    }
+
+    if (previewApp) previewApp.textContent = `$${fare.toFixed(2)}`;
+    if (previewPocket) previewPocket.textContent = isCash ? `+$${pocketDelta.toFixed(2)}` : '$0.00 (Tarjeta)';
+
+    return { fare, received, tip, changeGiven, pocketDelta, isCash };
+  }
+
+  saveTrip() {
+    const calc = this.updateTripLivePreview();
+    if (calc.fare <= 0) {
+      this.showToast('Por favor ingresa el valor de la tarifa DiDi', 'error');
+      document.getElementById('inputAppFare')?.focus();
+      return;
+    }
+
+    const notes = document.getElementById('inputTripNotes')?.value.trim() || '';
+
+    window.storageService.addTrip({
+      appFare: calc.fare,
+      paymentType: this.tripForm.paymentType,
+      amountReceived: calc.isCash ? calc.received : calc.fare,
+      isExact: this.tripForm.isExact || (calc.received === calc.fare),
+      tip: calc.tip,
+      changeGiven: calc.changeGiven,
+      cashPocketDelta: calc.pocketDelta,
+      notes: notes
+    });
+
+    window.feedbackService.playCashSuccess();
+    this.closeModal('modalTrip');
+    this.refreshAll();
+    
+    const tipMsg = calc.tip > 0 ? ` (+ $${calc.tip} propina)` : '';
+    this.showToast(`✅ Viaje guardado: $${calc.fare}${tipMsg}`);
+  }
+
+  // --- EXPENSE MODAL & LOGIC ---
+  renderExpenseCategories() {
+    const container = document.getElementById('expenseCategoryGrid');
+    if (!container) return;
+
+    container.innerHTML = this.categories.map(cat => `
+      <button type="button" onclick="app.selectExpenseCategory('${cat.id}')" id="catBtn_${cat.id}" 
+        class="cat-btn btn-quick-touch p-2.5 rounded-xl border ${this.expenseForm.category === cat.id ? 'border-rose-500 bg-rose-950/40' : 'border-dark-border bg-dark-card hover:bg-slate-800'} flex flex-col items-center justify-center gap-1 transition">
+        <i data-lucide="${cat.icon}" class="w-5 h-5 ${cat.color}"></i>
+        <span class="text-[10px] font-bold text-slate-200 text-center leading-tight">${cat.label}</span>
+      </button>
+    `).join('');
+
+    safeCreateIcons();
+  }
+
+  selectExpenseCategory(catId) {
+    window.feedbackService.playClick();
+    this.expenseForm.category = catId;
+    this.renderExpenseCategories();
+  }
+
+  openExpenseModal() {
+    window.feedbackService.playClick();
+    const inputAmount = document.getElementById('inputExpenseAmount');
+    const inputDesc = document.getElementById('inputExpenseDesc');
+    if (inputAmount) inputAmount.value = '';
+    if (inputDesc) inputDesc.value = '';
+
+    this.setExpensePaymentMethod('cash');
+    this.selectExpenseCategory('gasoline');
+    this.showModal('modalExpense');
+    setTimeout(() => {
+      if (inputAmount) inputAmount.focus();
+    }, 200);
+  }
+
+  setExpensePaymentMethod(method) {
+    window.feedbackService.playClick();
+    this.expenseForm.paymentMethod = method;
+    const btnCash = document.getElementById('btnExpPayCash');
+    const btnCard = document.getElementById('btnExpPayCard');
+    const impactText = document.getElementById('expenseCashImpactText');
+
+    if (method === 'cash') {
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-rose-500 bg-rose-950/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5';
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
+      if (impactText) {
+        impactText.textContent = '* Descontará directamente del dinero físico que tienes en los bolsillos.';
+        impactText.className = 'text-[10px] text-rose-400 mt-1';
+      }
+    } else {
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-950/40 text-blue-300 font-bold text-xs flex items-center justify-center gap-1.5';
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
+      if (impactText) {
+        impactText.textContent = '* Pagado con tarjeta/banco: se cuenta como gasto, pero NO resta del efectivo que traes en mano.';
+        impactText.className = 'text-[10px] text-blue-400 mt-1';
+      }
+    }
+  }
+
+  saveExpense() {
+    const amount = parseFloat(document.getElementById('inputExpenseAmount')?.value) || 0;
+    if (amount <= 0) {
+      this.showToast('Ingresa un monto de gasto válido', 'error');
+      document.getElementById('inputExpenseAmount')?.focus();
+      return;
+    }
+
+    const desc = document.getElementById('inputExpenseDesc')?.value.trim() || '';
+
+    window.storageService.addExpense({
+      amount: amount,
+      category: this.expenseForm.category,
+      paymentMethod: this.expenseForm.paymentMethod,
+      description: desc
+    });
+
+    window.feedbackService.playExpenseSound();
+    this.closeModal('modalExpense');
+    this.refreshAll();
+    this.showToast(`⛽ Gasto registrado: -$${amount.toLocaleString()}`);
+  }
+
+  // --- INITIAL CASH & SHIFT MANAGEMENT ---
+  openShiftModal() {
+    window.feedbackService.playClick();
+    const activeShift = window.storageService.getActiveShift();
+    const inputBase = document.getElementById('inputShiftBaseCash');
+    const inputGoal = document.getElementById('inputShiftGoal');
+    const inputOdo = document.getElementById('inputShiftOdometer');
+
+    if (inputBase) inputBase.value = activeShift ? (activeShift.initialCash || '') : '';
+    if (inputGoal) inputGoal.value = activeShift ? (activeShift.dailyGoal || 1500) : 1500;
+    if (inputOdo) inputOdo.value = activeShift ? (activeShift.initialOdometer || '') : '';
+
+    this.showModal('modalShift');
+    setTimeout(() => {
+      if (inputBase) inputBase.focus();
+    }, 200);
+  }
+
+  saveShiftConfig() {
+    const baseAmount = parseFloat(document.getElementById('inputShiftBaseCash')?.value) || 0;
+    const goal = parseFloat(document.getElementById('inputShiftGoal')?.value) || 1500;
+    const odo = parseFloat(document.getElementById('inputShiftOdometer')?.value) || 0;
+
+    let activeShift = window.storageService.getActiveShift();
+    if (!activeShift) {
+      activeShift = window.storageService.startShift({
+        initialCash: baseAmount,
+        dailyGoal: goal,
+        initialOdometer: odo
+      });
+    } else {
+      window.storageService.updateShift(activeShift.id, {
+        initialCash: baseAmount,
+        dailyGoal: goal,
+        initialOdometer: odo
+      });
+    }
+
+    window.feedbackService.playCashSuccess();
+    this.closeModal('modalShift');
+    this.refreshAll();
+    this.showToast(`Base de efectivo actualizada: $${baseAmount.toLocaleString()}`);
+  }
+
+  // --- ARQUEO & CUADRE DE BOLSILLO ---
+  openArqueoModal() {
+    window.feedbackService.playClick();
+    const activeShift = window.storageService.getActiveShift();
+    const initialCash = activeShift ? Number(activeShift.initialCash) || 0 : 0;
+
+    const todayData = window.reportsService.getFilteredData('today');
+    const metrics = window.reportsService.calculateMetrics(todayData);
+
+    const pocketExpected = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
+
+    const arqBase = document.getElementById('arqBaseCash');
+    const arqTrips = document.getElementById('arqTripsCash');
+    const arqExpenses = document.getElementById('arqExpensesCash');
+    const arqExpected = document.getElementById('arqExpectedCash');
+    const inputCounted = document.getElementById('inputCountedCash');
+    const resBox = document.getElementById('arqResultBox');
+
+    if (arqBase) arqBase.textContent = `$${initialCash.toLocaleString()}`;
+    if (arqTrips) arqTrips.textContent = `+$${metrics.totalCashInPocket.toLocaleString()}`;
+    if (arqExpenses) arqExpenses.textContent = `-$${metrics.cashExpenses.toLocaleString()}`;
+    if (arqExpected) arqExpected.textContent = `$${pocketExpected.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+    if (inputCounted) inputCounted.value = '';
+    if (resBox) resBox.classList.add('hidden');
+
+    this.showModal('modalArqueo');
+    setTimeout(() => {
+      if (inputCounted) inputCounted.focus();
+    }, 200);
+  }
+
+  calculateArqueoDiff() {
+    const activeShift = window.storageService.getActiveShift();
+    const initialCash = activeShift ? Number(activeShift.initialCash) || 0 : 0;
+    const todayData = window.reportsService.getFilteredData('today');
+    const metrics = window.reportsService.calculateMetrics(todayData);
+    const expected = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
+
+    const countedInput = document.getElementById('inputCountedCash');
+    const counted = parseFloat(countedInput?.value);
+
+    const resBox = document.getElementById('arqResultBox');
+    const resTitle = document.getElementById('arqResultTitle');
+    const resDetail = document.getElementById('arqResultDetail');
+
+    if (isNaN(counted)) {
+      if (resBox) resBox.classList.add('hidden');
+      return;
+    }
+
+    if (resBox) resBox.classList.remove('hidden');
+    const diff = counted - expected;
+
+    if (Math.abs(diff) < 0.05) {
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = '✨ ¡Cuadre Perfecto!';
+      if (resDetail) resDetail.textContent = 'El efectivo que contaste coincide exactamente con las cuentas registradas.';
+    } else if (diff > 0) {
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-amber-500/50 bg-amber-950/40 text-amber-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = `💵 Te sobran: +$${diff.toFixed(2)}`;
+      if (resDetail) resDetail.textContent = 'Tienes más dinero en la mano de lo calculado. Posiblemente recibiste alguna propina que no registraste.';
+    } else {
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-rose-500/50 bg-rose-950/40 text-rose-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = `⚠️ Te faltan: -$${Math.abs(diff).toFixed(2)}`;
+      if (resDetail) resDetail.textContent = 'Tienes menos dinero en la mano del calculado. Revisa si tuviste algún gasto en efectivo no anotado o diste cambio de más.';
+    }
+  }
+
+  closeShiftDefinitive() {
+    const activeShift = window.storageService.getActiveShift();
+    if (!activeShift) return;
+
+    if (!confirm('¿Deseas finalizar el turno de hoy? Esto guardará el arqueo y te permitirá iniciar un nuevo día mañana.')) {
+      return;
+    }
+
+    const countedInput = document.getElementById('inputCountedCash');
+    const counted = parseFloat(countedInput?.value) || null;
+
+    window.storageService.closeShift(activeShift.id, {
+      countedCash: counted,
+      closingNotes: 'Cierre de turno realizado'
+    });
+
+    this.closeModal('modalArqueo');
+    this.refreshAll();
+    this.showToast('Turno finalizado con éxito');
+  }
+
+  promptDailyGoal() {
+    const activeShift = window.storageService.getActiveShift();
+    const currentGoal = activeShift ? activeShift.dailyGoal || 1500 : 1500;
+    const newGoal = prompt('Ingresa tu meta de ganancia para hoy ($):', currentGoal);
+    if (newGoal && !isNaN(newGoal)) {
+      if (activeShift) {
+        window.storageService.updateShift(activeShift.id, { dailyGoal: Number(newGoal) });
+      }
+      this.refreshAll();
+      this.showToast(`Nueva meta fijada: $${Number(newGoal).toLocaleString()}`);
+    }
+  }
+
+  // --- REPORTS VIEW ---
+  changeReportPeriod(period) {
+    window.feedbackService.playClick();
+    this.activeReportPeriod = period;
+
+    ['today', 'week', 'fortnight', 'month', 'all'].forEach(p => {
+      const btn = document.getElementById(`periodBtn${p.charAt(0).toUpperCase() + p.slice(1)}`);
+      if (btn) {
+        if (p === period) {
+          btn.className = 'flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg bg-didi text-white transition';
+        } else {
+          btn.className = 'flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition';
+        }
+      }
+    });
+
+    this.refreshReports();
+  }
+
+  refreshReports() {
+    const data = window.reportsService.getFilteredData(this.activeReportPeriod);
+    const metrics = window.reportsService.calculateMetrics(data);
+
+    const rangeLabel = document.getElementById('reportDateRangeLabel');
+    if (rangeLabel) {
+      if (this.activeReportPeriod === 'all') {
+        rangeLabel.textContent = 'Historial completo acumulado';
+      } else {
+        const s = data.startDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+        const e = data.endDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+        rangeLabel.textContent = this.activeReportPeriod === 'today' ? `Hoy (${s})` : `${s} - ${e}`;
+      }
+    }
+
+    const rApp = document.getElementById('repAppTotal');
+    const rTrips = document.getElementById('repAppTrips');
+    const rTips = document.getElementById('repTipsTotal');
+    const rExp = document.getElementById('repExpensesTotal');
+    const rCashExp = document.getElementById('repCashExpenses');
+    const rNet = document.getElementById('repNetProfit');
+    const rMargin = document.getElementById('repNetMargin');
+
+    if (rApp) rApp.textContent = `$${metrics.totalAppFare.toLocaleString()}`;
+    if (rTrips) rTrips.textContent = `${metrics.tripCount} viajes (${metrics.cashTripsCount} cash / ${metrics.cardTripsCount} tarjeta)`;
+    if (rTips) rTips.textContent = `+$${metrics.totalTips.toLocaleString()}`;
+    if (rExp) rExp.textContent = `-$${metrics.totalExpenses.toLocaleString()}`;
+    if (rCashExp) rCashExp.textContent = `$${metrics.cashExpenses.toLocaleString()} en efectivo`;
+    
+    if (rNet) {
+      rNet.textContent = `$${metrics.netProfit.toLocaleString()}`;
+      rNet.className = `text-xl font-black ${metrics.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'} badge-currency`;
+    }
+
+    if (rMargin) rMargin.textContent = `${metrics.profitMargin.toFixed(1)}% de margen neto`;
+
+    const chartNetVal = document.getElementById('chartLabelNetVal');
+    const chartExpVal = document.getElementById('chartLabelExpVal');
+    if (chartNetVal) chartNetVal.textContent = `$${metrics.netProfit.toLocaleString()} (${metrics.profitMargin.toFixed(1)}%)`;
+    if (chartExpVal) chartExpVal.textContent = `$${metrics.totalExpenses.toLocaleString()} (${metrics.expenseRatio.toFixed(1)}%)`;
+
+    window.reportsService.renderCharts(metrics, data);
+  }
+
+  // --- HISTORY VIEW ---
+  setHistoryFilter(filter) {
+    window.feedbackService.playClick();
+    this.historyFilter = filter;
+    
+    const btnAll = document.getElementById('histFilterAll');
+    const btnTrips = document.getElementById('histFilterTrips');
+    const btnExp = document.getElementById('histFilterExpenses');
+
+    [btnAll, btnTrips, btnExp].forEach(b => {
+      if (b) b.className = 'px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white';
+    });
+
+    if (filter === 'all' && btnAll) btnAll.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+    if (filter === 'trips' && btnTrips) btnTrips.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+    if (filter === 'expenses' && btnExp) btnExp.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+
+    this.refreshHistory();
+  }
+
+  refreshHistory() {
+    const container = document.getElementById('historyListContainer');
+    const countEl = document.getElementById('historyItemsCount');
+    if (!container) return;
+
+    const trips = window.storageService.getTrips();
+    const expenses = window.storageService.getExpenses();
+
+    let items = [];
+    if (this.historyFilter === 'all' || this.historyFilter === 'trips') {
+      items = items.concat(trips.map(t => ({ ...t, _type: 'trip' })));
+    }
+    if (this.historyFilter === 'all' || this.historyFilter === 'expenses') {
+      items = items.concat(expenses.map(e => ({ ...e, _type: 'expense' })));
+    }
+
+    items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    if (countEl) countEl.textContent = `${items.length} registros`;
+
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="py-12 text-center text-slate-500 text-xs">
+          <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+          No hay movimientos registrados en este filtro.
+        </div>
+      `;
+      safeCreateIcons();
+      return;
+    }
+
+    container.innerHTML = items.map(item => {
+      const dateObj = new Date(item.timestamp);
+      const dateStr = dateObj.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (item._type === 'trip') {
+        const isCash = item.paymentType === 'cash';
+        return `
+          <div class="p-3.5 flex items-center justify-between hover:bg-slate-800/40 transition">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl ${isCash ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/80 text-didi border border-didi/30'} flex items-center justify-center">
+                <i data-lucide="${isCash ? 'banknote' : 'credit-card'}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>Viaje DiDi</span>
+                  ${item.tip > 0 ? `<span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px]">+Propina $${item.tip}</span>` : ''}
+                  ${item.isExact ? `<span class="px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 text-[10px]">Exacto</span>` : ''}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  ${dateStr} ${timeStr} • ${isCash ? 'Cobro en Efectivo' : 'Tarjeta DiDi'}
+                  ${item.notes ? `• "${item.notes}"` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div class="text-right">
+                <span class="block text-sm font-extrabold text-white badge-currency">$${(Number(item.appFare) + Number(item.tip)).toLocaleString()}</span>
+                <span class="text-[10px] text-slate-500">App: $${Number(item.appFare).toLocaleString()}</span>
+              </div>
+              <button onclick="deleteItem('trip', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        const catInfo = this.categories.find(c => c.id === item.category) || { label: 'Gasto', icon: 'tag' };
+        const isCash = item.paymentMethod === 'cash';
+        return `
+          <div class="p-3.5 flex items-center justify-between hover:bg-slate-800/40 transition">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-rose-950/80 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+                <i data-lucide="${catInfo.icon || 'fuel'}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-rose-300">
+                  ${catInfo.label} ${item.description ? `• ${item.description}` : ''}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  ${dateStr} ${timeStr} • ${isCash ? 'Efectivo (Bolsillo)' : 'Tarjeta'}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div class="text-right">
+                <span class="block text-sm font-extrabold text-rose-400 badge-currency">-$${Number(item.amount).toLocaleString()}</span>
+                <span class="text-[10px] text-slate-500">${isCash ? 'Bolsillo' : 'Tarjeta'}</span>
+              </div>
+              <button onclick="deleteItem('expense', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+
+    safeCreateIcons();
+  }
+
+  deleteItem(type, id) {
+    if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+    if (type === 'trip') {
+      window.storageService.deleteTrip(id);
+    } else {
+      window.storageService.deleteExpense(id);
+    }
+    this.refreshAll();
+    this.showToast('Registro eliminado');
+  }
+
+  // --- EXPORT TO CSV (EXCEL) ---
+  exportReportCSV() {
+    const data = window.reportsService.getFilteredData(this.activeReportPeriod);
+    
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvContent += 'Tipo,Fecha,Hora,Tarifa_App_DiDi,Propina,Total_Viaje,Tipo_Pago,Efectivo_Bolsillo,Categoria_Gasto,Monto_Gasto,Metodo_Pago_Gasto,Descripcion_Notas\r\n';
+
+    data.trips.forEach(t => {
+      const d = new Date(t.timestamp);
+      const date = d.toISOString().split('T')[0];
+      const time = d.toTimeString().split(' ')[0];
+      const total = (Number(t.appFare) || 0) + (Number(t.tip) || 0);
+      csvContent += `Viaje,${date},${time},${t.appFare},${t.tip},${total},${t.paymentType},${t.cashPocketDelta},,,,${(t.notes || '').replace(/,/g, ' ')}\r\n`;
+    });
+
+    data.expenses.forEach(e => {
+      const d = new Date(e.timestamp);
+      const date = d.toISOString().split('T')[0];
+      const time = d.toTimeString().split(' ')[0];
+      csvContent += `Gasto,${date},${time},,,,,,,${e.category},${e.amount},${e.paymentMethod},${(e.description || '').replace(/,/g, ' ')}\r\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `E&J_Profit_Reporte_${this.activeReportPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showToast('Reporte CSV descargado para Excel');
+  }
+
+  // --- SETTINGS & BACKUP ---
+  loadSettingsUI() {
+    const settings = window.storageService.getSettings();
+    const chkSound = document.getElementById('chkSound');
+    const chkVibrate = document.getElementById('chkVibrate');
+    if (chkSound) chkSound.checked = !!settings.soundEnabled;
+    if (chkVibrate) chkVibrate.checked = !!settings.vibrateEnabled;
+  }
+
+  toggleSound(enabled) {
+    const settings = window.storageService.getSettings();
+    settings.soundEnabled = enabled;
+    window.storageService.saveSettings(settings);
+    if (enabled) window.feedbackService.playCashSuccess();
+  }
+
+  toggleVibrate(enabled) {
+    const settings = window.storageService.getSettings();
+    settings.vibrateEnabled = enabled;
+    window.storageService.saveSettings(settings);
+    if (enabled) window.feedbackService.vibrate(50);
+  }
+
+  exportBackupJSON() {
+    const data = window.storageService.exportAllData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `EJ_Profit_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showToast('Copia de seguridad descargada');
+  }
+
+  importBackupJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (window.storageService.importAllData(json)) {
+          this.closeModal('modalSettings');
+          this.refreshAll();
+          this.showToast('Copia restaurada exitosamente');
+        } else {
+          alert('El archivo no tiene el formato correcto.');
+        }
+      } catch (err) {
+        alert('Error al leer el archivo JSON.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // --- MODALS HELPER ---
+  showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.remove('modal-hidden');
+    }
+  }
+
+  closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.add('modal-hidden');
+    }
+  }
+
+  closeAllModals() {
+    ['modalTrip', 'modalExpense', 'modalShift', 'modalArqueo', 'modalSettings'].forEach(id => {
+      this.closeModal(id);
+    });
+  }
+
+  // --- TOAST NOTIFICATIONS ---
+  showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'px-4 py-2 rounded-xl bg-slate-900/95 text-white border border-dark-border shadow-xl text-xs font-semibold flex items-center space-x-2 animate-bounce transition';
+    toast.innerHTML = `<span>${message}</span>`;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+}
+
+// Inicialización garantizada en cualquier ciclo de vida del navegador
+window.initApp = function() {
+  if (!window.app) {
+    try {
+      window.app = new ContaDriverApp();
+    } catch (e) {
+      console.error('Initialization error:', e);
+    }
+  }
+  const b1 = document.getElementById('btnOpenShiftModal');
+  if (b1) b1.onclick = () => window.openShiftModal();
+  const b2 = document.getElementById('shiftStatusIndicator');
+  if (b2) b2.onclick = () => window.openShiftModal();
+  const b3 = document.getElementById('btnOpenSettings');
+  if (b3) b3.onclick = () => window.showModal('modalSettings');
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initApp);
+} else {
+  window.initApp();
+}
+window.addEventListener('load', window.initApp);
+
+  </script>
 
   <!-- PWA Service Worker Registration -->
   <script>
