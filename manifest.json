@@ -1,12 +1,12 @@
 {
-  "name": "ContaDriver - Finanzas DiDi",
-  "short_name": "ContaDriver",
-  "description": "Control contable de viajes, efectivo en bolsillos y gastos para conductores DiDi",
+  "name": "E&J Profit - Driver DiDi",
+  "short_name": "E&J Profit",
+  "description": "Control contable inteligente de viajes, efectivo en bolsillos y gastos - Línea E&J Profit",
   "start_url": "./index.html",
   "scope": "./",
-  "id": "contadriver-didi-app",
+  "id": "ej-profit-driver-app",
   "display": "standalone",
-  "background_color": "#0F172A",
+  "background_color": "#0B1120",
   "theme_color": "#FF7D00",
   "orientation": "portrait-primary",
   "icons": [

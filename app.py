@@ -56,7 +56,7 @@ def main():
     mobile_url = f"http://{local_ip}:{PORT}"
 
     print("=" * 65)
-    print("   🚗  CONTADRIVER - CONTABILIDAD PARA CONDUCTORES DIDI  🚗")
+    print("      🚗  E&J PROFIT - CONTABILIDAD PARA CONDUCTORES  🚗")
     print("=" * 65)
     print(f"\n [✓] Servidor activo con éxito.")
     print(f" [PC]  En esta computadora:  {local_url}")

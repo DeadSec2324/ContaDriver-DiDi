@@ -1,5 +1,5 @@
-// ContaDriver Service Worker - Offline Support
-const CACHE_NAME = 'contadriver-v1.1.0';
+// E&J Profit - Service Worker & Offline Engine
+const CACHE_NAME = 'ej-profit-v2.0.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

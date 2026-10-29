@@ -1,6 +1,6 @@
-# 🚗 ContaDriver DiDi - Control Contable para Choferes
+# 🚗 E&J Profit - Control Contable para Choferes DiDi
 
-**ContaDriver** es una aplicación web contable diseñada específicamente para conductores de **DiDi** (y plataformas de viajes), optimizada para usarse cómodamente desde el soporte del celular en el auto o en la computadora.
+**E&J Profit** es una aplicación web contable de alto rendimiento diseñada específicamente para conductores de **DiDi** (y plataformas de viajes), optimizada para usarse cómodamente desde el soporte del celular en el auto o en la computadora.
 
 ---
 
