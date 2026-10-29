@@ -1,0 +1,8 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local backup / temporary files
+*.tmp
+.DS_Store
+Thumbs.db

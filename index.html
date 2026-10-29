@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ContaDriver - Contabilidad DiDi</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#FF7D00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ContaDriver">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            didi: {
+              DEFAULT: '#FF7D00',
+              50: '#FFF7ED',
+              100: '#FFEDD5',
+              200: '#FED7AA',
+              400: '#FB923C',
+              500: '#FF7D00',
+              600: '#EA580C',
+              700: '#C2410C',
+              800: '#9A3412',
+              900: '#7C2D12'
+            },
+            dark: {
+              base: '#0B1120',
+              surface: '#1E293B',
+              border: '#334155',
+              card: '#161F30'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-dark-base text-slate-100 min-h-screen flex flex-col font-sans antialiased pb-24 md:pb-12">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-40 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 py-3 shadow-lg">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      
+      <!-- Brand & Shift Status -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-didi-600 to-amber-500 flex items-center justify-center shadow-md shadow-didi/20">
+          <i data-lucide="car" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-didi-400 bg-clip-text text-transparent">
+              ContaDriver
+            </h1>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-didi/20 text-didi border border-didi/30">DiDi</span>
+          </div>
+          <!-- Shift indicator -->
+          <div id="shiftStatusIndicator" class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-400 hover:text-white transition">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shift-live-pulse"></span>
+            <span id="shiftStatusText">Turno Activo</span>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions (Fondo Inicial / Meta / Ajustes) -->
+      <div class="flex items-center space-x-2">
+        <!-- Botón Fondo Inicial Rápido -->
+        <button id="btnOpenShiftModal" title="Fondo inicial de efectivo" class="btn-quick-touch flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-600/40 text-emerald-300 hover:bg-emerald-900/60 text-xs font-semibold shadow-sm">
+          <i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden sm:inline">Base Inicial:</span>
+          <span id="headerInitialCash" class="font-bold text-white">$0</span>
+        </button>
+
+        <!-- Menu / Config -->
+        <button id="btnOpenSettings" title="Configuración y Respaldo" class="p-2 rounded-lg bg-dark-surface hover:bg-slate-700 text-slate-300 border border-dark-border transition">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-grow max-w-4xl mx-auto w-full px-3 sm:px-4 py-4 space-y-5">
+
+    <!-- NAVIGATION TABS -->
+    <nav class="grid grid-cols-3 gap-1 p-1 bg-dark-surface/90 border border-dark-border rounded-xl text-sm font-semibold shadow-inner">
+      <button id="tabBtnDashboard" onclick="app.switchTab('dashboard')" class="tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition">
+        <i data-lucide="gauge" class="w-4 h-4"></i>
+        <span>Panel Hoy</span>
+      </button>
+      <button id="tabBtnReports" onclick="app.switchTab('reports')" class="tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        <span>Reportes</span>
+      </button>
+      <button id="tabBtnHistory" onclick="app.switchTab('history')" class="tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+        <i data-lucide="history" class="w-4 h-4"></i>
+        <span>Historial</span>
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: DASHBOARD (PANEL DEL DÍA)           -->
+    <!-- ========================================== -->
+    <div id="viewDashboard" class="space-y-4">
+
+      <!-- HERO CARDS: BOLSILLO VS DIDI (LOS 2 NÚMEROS MÁS IMPORTANTES PARA EL CHOFER) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        
+        <!-- CARD 1: EFECTIVO EN BOLSILLOS -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-950/80 via-dark-surface to-dark-card border-2 border-emerald-500/40 p-4 pocket-glow">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <span class="text-xs uppercase font-extrabold tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <i data-lucide="banknote" class="w-4 h-4"></i> Dinero en el Bolsillo Ahora
+              </span>
+              <p class="text-xs text-slate-400">Base inicial + Cobros en efectivo - Gastos en efectivo</p>
+            </div>
+            <button onclick="app.openArqueoModal()" title="Cuadre / Arqueo de efectivo" class="text-xs px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 font-medium border border-emerald-500/30 transition flex items-center gap-1">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Cuadrar
+            </button>
+          </div>
+
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="dashPocketTotal" class="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight badge-currency">$0.00</span>
+            <span class="text-xs text-emerald-500/80 font-medium">efectivo físico en mano</span>
+          </div>
+
+          <!-- Desglose rápido del bolsillo -->
+          <div class="mt-3 pt-3 border-t border-emerald-900/40 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
+            <div>
+              <span class="block text-slate-500">Base previa</span>
+              <span id="dashBaseCash" class="font-bold text-slate-200">$0</span>
+            </div>
+            <div>
+              <span class="block text-emerald-400/90">+ Entró cash</span>
+              <span id="dashCashCollected" class="font-bold text-emerald-300">+$0</span>
+            </div>
+            <div>
+              <span class="block text-rose-400/90">- Gastos cash</span>
+              <span id="dashCashSpent" class="font-bold text-rose-300">-$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: TOTAL PRODUCIDO EN DIDI (APP) -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-950/70 via-dark-surface to-dark-card border-2 border-didi/40 p-4 didi-glow">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <span class="text-xs uppercase font-extrabold tracking-wider text-didi-400 flex items-center gap-1.5">
+                <i data-lucide="smartphone" class="w-4 h-4"></i> Facturado por la App (DiDi)
+              </span>
+              <p class="text-xs text-slate-400">Tarifas oficiales de viajes realizados hoy</p>
+            </div>
+            <span id="dashTripCountBadge" class="text-xs px-2.5 py-1 rounded-md bg-didi/20 text-didi-300 font-bold border border-didi/30">
+              0 viajes
+            </span>
+          </div>
+
+          <div class="mt-3 flex items-baseline space-x-2">
+            <span id="dashDidiTotal" class="text-3xl sm:text-4xl font-black text-didi-400 tracking-tight badge-currency">$0.00</span>
+            <span class="text-xs text-didi-500/80 font-medium">en tarifas DiDi</span>
+          </div>
+
+          <!-- Desglose de Propinas y Ganancia Neta -->
+          <div class="mt-3 pt-3 border-t border-amber-900/40 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
+            <div>
+              <span class="block text-amber-400/90">+ Propinas</span>
+              <span id="dashTipsTotal" class="font-bold text-amber-300">+$0</span>
+            </div>
+            <div>
+              <span class="block text-rose-400/90">Total Gastos</span>
+              <span id="dashExpensesTotal" class="font-bold text-rose-400">-$0</span>
+            </div>
+            <div>
+              <span class="block text-emerald-400 font-semibold">Ganancia Neta</span>
+              <span id="dashNetProfit" class="font-extrabold text-emerald-400">$0</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DAILY GOAL PROGRESS BAR -->
+      <div class="p-3.5 rounded-xl bg-dark-surface/90 border border-dark-border">
+        <div class="flex items-center justify-between text-xs mb-1.5">
+          <div class="flex items-center space-x-1.5">
+            <i data-lucide="target" class="w-4 h-4 text-didi"></i>
+            <span class="font-bold text-slate-200">Meta Diaria de Ganancia</span>
+            <button onclick="app.promptDailyGoal()" class="text-[10px] text-slate-400 hover:text-didi underline ml-1">(Cambiar)</button>
+          </div>
+          <div class="font-bold">
+            <span id="goalCurrentAmount" class="text-emerald-400">$0</span>
+            <span class="text-slate-500">/</span>
+            <span id="goalTargetAmount" class="text-slate-300">$1,500</span>
+            <span id="goalPercentText" class="text-xs text-didi ml-1">(0%)</span>
+          </div>
+        </div>
+        <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden relative">
+          <div id="goalProgressBar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS: REGISTRAR VIAJE & REGISTRAR GASTO -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        
+        <!-- REGISTRAR VIAJE -->
+        <button onclick="app.openTripModal()" class="btn-quick-touch flex flex-col sm:flex-row items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-didi-600 via-didi to-amber-500 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-didi/25 hover:brightness-110 active:scale-95 transition">
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <i data-lucide="plus" class="w-5 h-5 text-white stroke-[3]"></i>
+          </div>
+          <span class="text-center sm:text-left leading-tight">Registrar Viaje DiDi</span>
+        </button>
+
+        <!-- REGISTRAR GASTO -->
+        <button onclick="app.openExpenseModal()" class="btn-quick-touch flex flex-col sm:flex-row items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-rose-700 via-rose-600 to-red-500 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-rose-600/25 hover:brightness-110 active:scale-95 transition">
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <i data-lucide="minus" class="w-5 h-5 text-white stroke-[3]"></i>
+          </div>
+          <span class="text-center sm:text-left leading-tight">Registrar Gasto</span>
+        </button>
+
+      </div>
+
+      <!-- RECENT ACTIVITY (HOY) -->
+      <div class="rounded-2xl bg-dark-surface/90 border border-dark-border p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> Movimientos de Hoy
+          </h2>
+          <span id="dashTodayCount" class="text-xs text-slate-400">0 registros</span>
+        </div>
+
+        <div id="dashRecentList" class="space-y-2.5 divide-y divide-dark-border/50">
+          <!-- Dynamically populated or empty state -->
+          <div class="py-8 text-center text-slate-500 text-xs">
+            <i data-lucide="car" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+            Aún no has registrado viajes ni gastos hoy.<br>Presiona los botones naranjas o rojos de arriba para comenzar.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: REPORTES Y GRÁFICAS                -->
+    <!-- ========================================== -->
+    <div id="viewReports" class="space-y-4 hidden">
+      
+      <!-- PERIOD SELECTOR -->
+      <div class="p-1.5 bg-dark-surface rounded-xl border border-dark-border flex flex-wrap gap-1">
+        <button onclick="app.changeReportPeriod('today')" id="periodBtnToday" class="flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg bg-didi text-white transition">Hoy</button>
+        <button onclick="app.changeReportPeriod('week')" id="periodBtnWeek" class="flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">Semanal</button>
+        <button onclick="app.changeReportPeriod('fortnight')" id="periodBtnFortnight" class="flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">Quincenal</button>
+        <button onclick="app.changeReportPeriod('month')" id="periodBtnMonth" class="flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">Mensual</button>
+        <button onclick="app.changeReportPeriod('all')" id="periodBtnAll" class="flex-1 min-w-[70px] py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">Todo</button>
+      </div>
+
+      <!-- DATE RANGE BANNER -->
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span id="reportDateRangeLabel">Período seleccionado</span>
+        <button onclick="app.exportReportCSV()" class="text-didi-400 hover:text-didi flex items-center gap-1 font-semibold">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar a Excel (CSV)
+        </button>
+      </div>
+
+      <!-- SUMMARY KPI METRICS -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        
+        <div class="p-3 rounded-xl bg-dark-surface border border-dark-border">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block">Facturado App</span>
+          <span id="repAppTotal" class="text-xl font-black text-didi-400 badge-currency">$0</span>
+          <span id="repAppTrips" class="text-[10px] text-slate-500 block">0 viajes</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-dark-surface border border-dark-border">
+          <span class="text-[10px] uppercase font-bold text-amber-400 block">Propinas Extras</span>
+          <span id="repTipsTotal" class="text-xl font-black text-amber-400 badge-currency">$0</span>
+          <span class="text-[10px] text-slate-500 block">dejadas por clientes</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-dark-surface border border-dark-border">
+          <span class="text-[10px] uppercase font-bold text-rose-400 block">Total Gastos</span>
+          <span id="repExpensesTotal" class="text-xl font-black text-rose-400 badge-currency">$0</span>
+          <span id="repCashExpenses" class="text-[10px] text-slate-500 block">$0 en efectivo</span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-dark-surface border border-emerald-500/30 bg-emerald-950/20">
+          <span class="text-[10px] uppercase font-bold text-emerald-400 block">Ganancia Neta</span>
+          <span id="repNetProfit" class="text-xl font-black text-emerald-400 badge-currency">$0</span>
+          <span id="repNetMargin" class="text-[10px] text-emerald-500/80 block">0% margen</span>
+        </div>
+
+      </div>
+
+      <!-- PERCENTAGE GRAPHIC: COMPARATIVA GASTOS VS GANANCIAS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- DONUT CHART: % GASTOS VS % GANANCIA NETA -->
+        <div class="p-4 rounded-2xl bg-dark-surface border border-dark-border space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-200">Comparativa: Ganancias vs Gastos</h3>
+              <p class="text-[11px] text-slate-400">Porcentaje que se queda de ganancia neta</p>
+            </div>
+            <div class="text-right">
+              <span id="reportProfitPercentBadge" class="text-sm font-extrabold text-emerald-400">0%</span>
+              <span class="block text-[9px] uppercase tracking-wider text-slate-500">Rentabilidad</span>
+            </div>
+          </div>
+
+          <div class="relative w-full h-56 sm:h-64">
+            <canvas id="chartProfitExpenses"></canvas>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-center text-xs pt-1 border-t border-dark-border/50">
+            <div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
+              <span class="block text-emerald-400 font-bold">Ganancia Neta</span>
+              <span id="chartLabelNetVal" class="text-xs text-slate-300 font-semibold">$0</span>
+            </div>
+            <div class="p-2 rounded-lg bg-rose-950/30 border border-rose-500/20">
+              <span class="block text-rose-400 font-bold">Gastos Totales</span>
+              <span id="chartLabelExpVal" class="text-xs text-slate-300 font-semibold">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DONUT CHART: DESGLOSE DE GASTOS POR CATEGORÍA -->
+        <div class="p-4 rounded-2xl bg-dark-surface border border-dark-border space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-200">¿En qué se va el dinero?</h3>
+              <p class="text-[11px] text-slate-400">Distribución de gastos por categoría</p>
+            </div>
+            <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i>
+          </div>
+
+          <div class="relative w-full h-56 sm:h-64">
+            <canvas id="chartExpenseCategories"></canvas>
+          </div>
+
+          <div id="topExpenseHighlight" class="text-[11px] text-center text-slate-400 pt-1 border-t border-dark-border/50">
+            ⛽ Gasolina suele ser el gasto principal del día.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TREND BAR CHART: INGRESOS VS GASTOS POR DÍA -->
+      <div class="p-4 rounded-2xl bg-dark-surface border border-dark-border space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-sm text-slate-200">Evolución en el Tiempo</h3>
+            <p class="text-[11px] text-slate-400">Ganancias DiDi vs Gastos por día</p>
+          </div>
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-slate-400"></i>
+        </div>
+        <div class="relative h-56 sm:h-64">
+          <canvas id="chartTrend"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: HISTORIAL COMPLETO DE MOVIMIENTOS  -->
+    <!-- ========================================== -->
+    <div id="viewHistory" class="space-y-4 hidden">
+      
+      <!-- Filter controls -->
+      <div class="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center">
+        <div class="flex gap-1.5 p-1 bg-dark-surface rounded-lg border border-dark-border">
+          <button onclick="app.setHistoryFilter('all')" id="histFilterAll" class="px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white">Todos</button>
+          <button onclick="app.setHistoryFilter('trips')" id="histFilterTrips" class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white">Solo Viajes</button>
+          <button onclick="app.setHistoryFilter('expenses')" id="histFilterExpenses" class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white">Solo Gastos</button>
+        </div>
+        <div class="text-xs text-slate-400 flex items-center gap-2">
+          <span id="historyItemsCount">0 registros</span>
+        </div>
+      </div>
+
+      <!-- Table / List of items -->
+      <div class="rounded-2xl bg-dark-surface border border-dark-border overflow-hidden">
+        <div id="historyListContainer" class="divide-y divide-dark-border">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: REGISTRAR VIAJE DIDI                -->
+  <!-- ========================================== -->
+  <div id="modalTrip" class="modal-hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="modal-content w-full sm:max-w-md bg-dark-surface border-t sm:border border-dark-border sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 bg-gradient-to-r from-dark-card to-dark-surface border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-didi/20 text-didi flex items-center justify-center">
+            <i data-lucide="car" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-base">Registrar Viaje DiDi</h3>
+            <p class="text-[11px] text-slate-400">Ingresa la tarifa de la app y el pago del cliente</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('modalTrip')" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 overflow-y-auto flex-grow">
+        
+        <!-- Método de Cobro: Efectivo vs Tarjeta/App -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            ¿Cómo pagó el cliente?
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnTripPayCash" onclick="app.setTripPaymentType('cash')" class="btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i data-lucide="banknote" class="w-4 h-4"></i> Efectivo (Bolsillo)
+            </button>
+            <button type="button" id="btnTripPayCard" onclick="app.setTripPaymentType('card')" class="btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition">
+              <i data-lucide="credit-card" class="w-4 h-4"></i> Tarjeta / DiDi App
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. TARIFA SEGÚN APP DIDI (COBRAR X) -->
+        <div>
+          <label for="inputAppFare" class="block text-xs font-bold uppercase tracking-wider text-didi-400 mb-1.5 flex justify-between">
+            <span>Precio que dice la App a cobrar:</span>
+            <span class="text-slate-400 text-[11px] font-normal">Tarifa oficial</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">$</span>
+            <input type="number" id="inputAppFare" inputmode="decimal" step="any" placeholder="0.00" 
+              class="w-full pl-9 pr-4 py-3.5 rounded-xl bg-dark-card border-2 border-dark-border focus:border-didi text-2xl font-black text-white placeholder-slate-600 focus:outline-none transition"
+              oninput="app.onTripFareInput()">
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE PAGO DEL CLIENTE (VISIBLE SI ES EFECTIVO) -->
+        <div id="cashPaymentSection" class="space-y-3 p-3.5 rounded-xl bg-dark-card/90 border border-dark-border">
+          
+          <div class="flex items-center justify-between">
+            <label for="inputAmountReceived" class="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              Cantidad que dio el cliente:
+            </label>
+            <!-- BOTÓN PAGO EXACTO (ACCESO RÁPIDO SOLICITADO) -->
+            <button type="button" id="btnExactPayment" onclick="app.setExactPayment()" class="btn-quick-touch px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i> Pago Exacto
+            </button>
+          </div>
+
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">$</span>
+            <input type="number" id="inputAmountReceived" inputmode="decimal" step="any" placeholder="0.00" 
+              class="w-full pl-9 pr-4 py-3.5 rounded-xl bg-dark-surface border-2 border-dark-border focus:border-emerald-500 text-2xl font-black text-white placeholder-slate-600 focus:outline-none transition"
+              oninput="app.onTripReceivedInput()">
+          </div>
+
+          <!-- ATAJOS DE BILLETES RÁPIDOS -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="text-[10px] text-slate-500 self-center mr-1">Billetes:</span>
+            <button type="button" onclick="app.quickAddBill(50)" class="btn-quick-touch px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold border border-slate-700">$50</button>
+            <button type="button" onclick="app.quickAddBill(100)" class="btn-quick-touch px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold border border-slate-700">$100</button>
+            <button type="button" onclick="app.quickAddBill(200)" class="btn-quick-touch px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold border border-slate-700">$200</button>
+            <button type="button" onclick="app.quickAddBill(500)" class="btn-quick-touch px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold border border-slate-700">$500</button>
+          </div>
+
+          <!-- RESUMEN AUTOMÁTICO DE CAMBIO / PROPINA -->
+          <div id="tripDiffNotice" class="hidden p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-xs space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400">Diferencia entregada:</span>
+              <span id="diffAmountText" class="font-bold text-amber-400 text-sm">$0.00</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <button type="button" id="btnDiffIsTip" onclick="app.setDiffDecision('tip')" class="p-2 rounded-lg bg-amber-500/20 border-2 border-amber-500 text-amber-300 font-bold text-[11px] text-center flex flex-col items-center">
+                <span>Es Propina</span>
+                <span class="text-[9px] font-normal text-amber-400/80">(Bolsillo +$100)</span>
+              </button>
+              <button type="button" id="btnDiffIsChange" onclick="app.setDiffDecision('change')" class="p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700">
+                <span>Devolví Cambio</span>
+                <span class="text-[9px] font-normal text-slate-400">(Bolsillo +$80)</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RESUMEN EN VIVO DE ESTE VIAJE -->
+        <div class="p-3 rounded-xl bg-dark-card border border-dark-border grid grid-cols-2 gap-2 text-center text-xs">
+          <div class="p-2 rounded-lg bg-dark-surface">
+            <span class="block text-slate-400 text-[10px] uppercase font-bold">Ganancia App DiDi</span>
+            <span id="previewAppFare" class="font-extrabold text-didi-400 text-base">$0.00</span>
+          </div>
+          <div class="p-2 rounded-lg bg-dark-surface">
+            <span class="block text-emerald-400 text-[10px] uppercase font-bold">Entra a tus Bolsillos</span>
+            <span id="previewPocketCash" class="font-extrabold text-emerald-400 text-base">+$0.00</span>
+          </div>
+        </div>
+
+        <!-- Notas opcionales -->
+        <div>
+          <label for="inputTripNotes" class="block text-xs font-semibold text-slate-400 mb-1">Notas o referencia (opcional):</label>
+          <input type="text" id="inputTripNotes" placeholder="Ej: Viaje al aeropuerto, cliente amable..." 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-dark-card border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-slate-500">
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-dark-card border-t border-dark-border flex gap-3">
+        <button type="button" onclick="app.closeModal('modalTrip')" class="btn-quick-touch flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm hover:bg-slate-700 transition">
+          Cancelar
+        </button>
+        <button type="button" onclick="app.saveTrip()" class="btn-quick-touch flex-[2] py-3 rounded-xl bg-gradient-to-r from-didi-600 to-amber-500 text-white font-extrabold text-base shadow-lg shadow-didi/25 hover:brightness-110 transition flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-5 h-5"></i> Guardar Viaje
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: REGISTRAR GASTO                     -->
+  <!-- ========================================== -->
+  <div id="modalExpense" class="modal-hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="modal-content w-full sm:max-w-md bg-dark-surface border-t sm:border border-dark-border sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Header -->
+      <div class="px-5 py-4 bg-gradient-to-r from-dark-card to-dark-surface border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+            <i data-lucide="fuel" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-base">Registrar Gasto</h3>
+            <p class="text-[11px] text-slate-400">Gasolina, comida, taller, casetas, etc.</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('modalExpense')" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-4 overflow-y-auto flex-grow">
+        
+        <!-- Monto del Gasto -->
+        <div>
+          <label for="inputExpenseAmount" class="block text-xs font-bold uppercase tracking-wider text-rose-400 mb-1.5">
+            Monto Gastado:
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">$</span>
+            <input type="number" id="inputExpenseAmount" inputmode="decimal" step="any" placeholder="0.00" 
+              class="w-full pl-9 pr-4 py-3.5 rounded-xl bg-dark-card border-2 border-dark-border focus:border-rose-500 text-2xl font-black text-white placeholder-slate-600 focus:outline-none transition">
+          </div>
+        </div>
+
+        <!-- Categoría del Gasto -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            Categoría:
+          </label>
+          <div class="grid grid-cols-4 gap-2" id="expenseCategoryGrid">
+            <!-- Dynamically populated buttons with icons -->
+          </div>
+        </div>
+
+        <!-- ¿De dónde salió el dinero? (Método de Pago del Gasto) -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            ¿Cómo pagaste este gasto?
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnExpPayCash" onclick="app.setExpensePaymentMethod('cash')" class="btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-rose-500 bg-rose-950/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5">
+              <i data-lucide="banknote" class="w-4 h-4"></i> Efectivo (Bolsillo)
+            </button>
+            <button type="button" id="btnExpPayCard" onclick="app.setExpensePaymentMethod('card')" class="btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500">
+              <i data-lucide="credit-card" class="w-4 h-4"></i> Tarjeta / Banco
+            </button>
+          </div>
+          <p id="expenseCashImpactText" class="text-[10px] text-rose-400 mt-1">
+            * Descontará directamente del dinero físico que tienes en los bolsillos.
+          </p>
+        </div>
+
+        <!-- Descripción / Detalle -->
+        <div>
+          <label for="inputExpenseDesc" class="block text-xs font-semibold text-slate-400 mb-1">Descripción del gasto:</label>
+          <input type="text" id="inputExpenseDesc" placeholder="Ej: 20 Litros Magna, Tacos de almuerzo..." 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-dark-card border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-slate-500">
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-dark-card border-t border-dark-border flex gap-3">
+        <button type="button" onclick="app.closeModal('modalExpense')" class="btn-quick-touch flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm hover:bg-slate-700 transition">
+          Cancelar
+        </button>
+        <button type="button" onclick="app.saveExpense()" class="btn-quick-touch flex-[2] py-3 rounded-xl bg-gradient-to-r from-rose-700 to-red-500 text-white font-extrabold text-base shadow-lg shadow-rose-600/25 hover:brightness-110 transition flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-5 h-5"></i> Guardar Gasto
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: BASE INICIAL Y TURNO DEL DÍA        -->
+  <!-- ========================================== -->
+  <div id="modalShift" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="modal-content w-full max-w-md bg-dark-surface border border-dark-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      
+      <div class="px-5 py-4 bg-dark-card border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
+          <h3 class="font-extrabold text-white text-base">Efectivo Inicial del Día</h3>
+        </div>
+        <button onclick="app.closeModal('modalShift')" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Ingresa la cantidad de dinero en efectivo que traes en tu bolsillo o billetera <strong>antes de empezar a trabajar</strong>. De esta manera, el sistema no confundirá el dinero que ya tenías con lo que ganes hoy.
+        </p>
+
+        <div>
+          <label for="inputShiftBaseCash" class="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1.5">
+            Efectivo previo para cambio:
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">$</span>
+            <input type="number" id="inputShiftBaseCash" inputmode="decimal" placeholder="0.00" 
+              class="w-full pl-9 pr-4 py-3.5 rounded-xl bg-dark-card border-2 border-emerald-500/50 focus:border-emerald-500 text-2xl font-black text-white focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="inputShiftGoal" class="block text-xs font-semibold text-slate-400 mb-1">Meta del día ($):</label>
+            <input type="number" id="inputShiftGoal" placeholder="1500" 
+              class="w-full px-3 py-2 rounded-xl bg-dark-card border border-dark-border text-sm text-white">
+          </div>
+          <div>
+            <label for="inputShiftOdometer" class="block text-xs font-semibold text-slate-400 mb-1">Km inicial (opc.):</label>
+            <input type="number" id="inputShiftOdometer" placeholder="Ej: 142050" 
+              class="w-full px-3 py-2 rounded-xl bg-dark-card border border-dark-border text-sm text-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-dark-card border-t border-dark-border flex gap-3">
+        <button type="button" onclick="app.closeModal('modalShift')" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm">
+          Cancelar
+        </button>
+        <button type="button" onclick="app.saveShiftConfig()" class="flex-[2] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-md transition">
+          Guardar y Comenzar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ARQUEO / CUADRE DE BOLSILLO          -->
+  <!-- ========================================== -->
+  <div id="modalArqueo" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="modal-content w-full max-w-md bg-dark-surface border border-dark-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      
+      <div class="px-5 py-4 bg-dark-card border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="check-check" class="w-5 h-5 text-emerald-400"></i>
+          <h3 class="font-extrabold text-white text-base">Arqueo y Cuadre de Bolsillo</h3>
+        </div>
+        <button onclick="app.closeModal('modalArqueo')" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        
+        <div class="p-3.5 rounded-xl bg-dark-card border border-dark-border space-y-2 text-xs">
+          <div class="flex justify-between text-slate-400">
+            <span>Base inicial:</span>
+            <span id="arqBaseCash" class="font-bold text-slate-200">$0</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>+ Efectivo neto de viajes:</span>
+            <span id="arqTripsCash" class="font-bold text-emerald-400">+$0</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>- Gastos pagados en efectivo:</span>
+            <span id="arqExpensesCash" class="font-bold text-rose-400">-$0</span>
+          </div>
+          <div class="pt-2 border-t border-dark-border flex justify-between text-sm font-bold">
+            <span class="text-white">Debes tener en bolsillo:</span>
+            <span id="arqExpectedCash" class="text-emerald-400 font-black text-base">$0.00</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="inputCountedCash" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            ¿Cuánto efectivo contaste en tu bolsillo físicamente?
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">$</span>
+            <input type="number" id="inputCountedCash" inputmode="decimal" placeholder="0.00" 
+              class="w-full pl-9 pr-4 py-3.5 rounded-xl bg-dark-card border-2 border-dark-border focus:border-emerald-500 text-2xl font-black text-white focus:outline-none"
+              oninput="app.calculateArqueoDiff()">
+          </div>
+        </div>
+
+        <!-- RESULTADO DEL CUADRE -->
+        <div id="arqResultBox" class="hidden p-3 rounded-xl border text-center space-y-1">
+          <span id="arqResultTitle" class="block font-extrabold text-sm"></span>
+          <p id="arqResultDetail" class="text-xs"></p>
+        </div>
+
+      </div>
+
+      <div class="p-4 bg-dark-card border-t border-dark-border flex gap-3">
+        <button type="button" onclick="app.closeModal('modalArqueo')" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm">
+          Cerrar
+        </button>
+        <button type="button" onclick="app.closeShiftDefinitive()" class="flex-1 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-extrabold text-xs">
+          Finalizar Turno
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CONFIGURACIÓN Y RESPALDO            -->
+  <!-- ========================================== -->
+  <div id="modalSettings" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="modal-content w-full max-w-md bg-dark-surface border border-dark-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      
+      <div class="px-5 py-4 bg-dark-card border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="settings" class="w-5 h-5 text-slate-300"></i>
+          <h3 class="font-extrabold text-white text-base">Ajustes y Respaldo</h3>
+        </div>
+        <button onclick="app.closeModal('modalSettings')" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Preferencias de chofer -->
+        <div class="space-y-3">
+          <h4 class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Preferencias</h4>
+          
+          <div class="flex items-center justify-between p-3 rounded-xl bg-dark-card border border-dark-border">
+            <div>
+              <span class="block text-sm font-semibold text-white">Sonido al registrar</span>
+              <span class="text-xs text-slate-400">Tono de confirmación sin ver la pantalla</span>
+            </div>
+            <input type="checkbox" id="chkSound" class="w-5 h-5 accent-didi rounded" onchange="app.toggleSound(this.checked)">
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-xl bg-dark-card border border-dark-border">
+            <div>
+              <span class="block text-sm font-semibold text-white">Vibración en el teléfono</span>
+              <span class="text-xs text-slate-400">Vibrar al guardar un viaje</span>
+            </div>
+            <input type="checkbox" id="chkVibrate" class="w-5 h-5 accent-didi rounded" onchange="app.toggleVibrate(this.checked)">
+          </div>
+        </div>
+
+        <!-- Copia de seguridad y respaldo -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Respaldo de Datos</h4>
+          
+          <button onclick="app.exportBackupJSON()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-2">
+            <i data-lucide="download-cloud" class="w-4 h-4 text-didi"></i> Descargar Copia de Seguridad (JSON)
+          </button>
+
+          <label class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="upload-cloud" class="w-4 h-4 text-emerald-400"></i> Restaurar Copia de Seguridad
+            <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="app.importBackupJSON(event)">
+          </label>
+        </div>
+
+        <!-- Información de App PWA -->
+        <div class="p-3 rounded-xl bg-didi/10 border border-didi/20 text-xs text-slate-300 space-y-1">
+          <span class="font-bold text-didi flex items-center gap-1">
+            <i data-lucide="smartphone" class="w-4 h-4"></i> ¿Cómo usarla en el celular?
+          </span>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Ábrela en Google Chrome o Safari en tu teléfono y toca el menú de 3 puntos &gt; <strong>"Añadir a la pantalla de inicio"</strong>. Funcionará como una app normal, incluso sin conexión a internet.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="p-4 bg-dark-card border-t border-dark-border">
+        <button type="button" onclick="app.closeModal('modalSettings')" class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm">
+          Listo
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center space-y-2 pointer-events-none"></div>
+
+  <!-- Scripts -->
+  <script src="./js/storage.js"></script>
+  <script src="./js/audio.js"></script>
+  <script src="./js/reports.js"></script>
+  <script src="./js/app.js"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+          console.log('SW registration note:', err);
+        });
+      });
+    }
+    // Initialize icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
