@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0B1120;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFA142;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FF7D00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D95A00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#34D399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+
+  <!-- Outer Ring with Glow -->
+  <circle cx="256" cy="256" r="215" fill="none" stroke="url(#goldGrad)" stroke-width="14" opacity="0.9" />
+  <circle cx="256" cy="256" r="200" fill="#161F30" />
+
+  <!-- Profit Growth Arrow (Top) -->
+  <path d="M 180 155 Q 220 150, 256 130 T 330 100" fill="none" stroke="url(#greenGrad)" stroke-width="8" stroke-linecap="round" />
+  <polygon points="330,100 305,98 322,118" fill="#10B981" />
+
+  <!-- Main Monogram: E&J -->
+  <text x="256" y="255" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="140" 
+        font-weight="900" 
+        letter-spacing="2" 
+        fill="#FFFFFF" 
+        text-anchor="middle" 
+        filter="drop-shadow(0 4px 10px rgba(0,0,0,0.6))">
+    E&amp;J
+  </text>
+
+  <!-- PROFIT Pill Ribbon -->
+  <rect x="130" y="300" width="252" height="68" rx="34" fill="url(#goldGrad)" filter="drop-shadow(0 6px 12px rgba(255,125,0,0.35))" />
+  <text x="256" y="347" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="40" 
+        font-weight="900" 
+        letter-spacing="6" 
+        fill="#0F172A" 
+        text-anchor="middle">
+    PROFIT
+  </text>
+
+  <!-- Driver Accent Dot / DiDi Reference -->
+  <circle cx="256" cy="405" r="7" fill="#10B981" />
+  <circle cx="236" cy="405" r="4" fill="#FF7D00" opacity="0.7" />
+  <circle cx="276" cy="405" r="4" fill="#FF7D00" opacity="0.7" />
+</svg>
