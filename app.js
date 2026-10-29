@@ -1,4 +1,17 @@
-// js/app.js - Controlador principal de la aplicación ContaDriver DiDi
+// js/app.js - Controlador principal de la aplicación ContaDriver / E&J Profit DiDi
+
+// Función segura para crear iconos Lucide sin romper si la librería está offline o cargando
+function safeCreateIcons() {
+  if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+    try {
+      lucide.createIcons();
+    } catch (e) {
+      console.warn('Lucide notice:', e);
+    }
+  }
+}
+window.safeCreateIcons = safeCreateIcons;
+
 // Funciones globales seguras para cerrar y abrir modales
 window.closeModal = function(modalId) {
   const modal = document.getElementById(modalId);
@@ -14,6 +27,102 @@ window.showModal = function(modalId) {
     modal.style.display = 'flex';
     modal.classList.remove('modal-hidden');
   }
+};
+
+// Acciones globales invocables directamente desde cualquier botón HTML
+window.openTripModal = window._openTripModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openTripModal();
+};
+
+window.openExpenseModal = window._openExpenseModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openExpenseModal();
+};
+
+window.openShiftModal = window._openShiftModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openShiftModal();
+};
+
+window.openArqueoModal = window._openArqueoModal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.openArqueoModal();
+};
+
+window.promptDailyGoal = window._promptDailyGoal = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.promptDailyGoal();
+};
+
+window.switchTab = window._switchTab = function(tabName) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.switchTab(tabName);
+};
+
+window.saveTrip = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveTrip();
+};
+
+window.saveExpense = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveExpense();
+};
+
+window.saveShiftConfig = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.saveShiftConfig();
+};
+
+window.closeShiftDefinitive = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.closeShiftDefinitive();
+};
+
+window.calculateArqueoDiff = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.calculateArqueoDiff();
+};
+
+window.exportBackupJSON = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.exportBackupJSON();
+};
+
+window.importBackupJSON = function(event) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.importBackupJSON(event);
+};
+
+window.toggleSound = function(checked) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.toggleSound(checked);
+};
+
+window.toggleVibrate = function(checked) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.toggleVibrate(checked);
+};
+
+window.changeReportPeriod = function(period) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.changeReportPeriod(period);
+};
+
+window.exportReportCSV = function() {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.exportReportCSV();
+};
+
+window.setHistoryFilter = function(filter) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.setHistoryFilter(filter);
+};
+
+window.deleteItem = function(type, id) {
+  if (!window.app) window.initApp();
+  if (window.app) window.app.deleteItem(type, id);
 };
 
 class ContaDriverApp {
@@ -53,7 +162,6 @@ class ContaDriverApp {
     // Ensure active shift exists
     let activeShift = window.storageService.getActiveShift();
     if (!activeShift) {
-      // Create initial active shift if first time
       const settings = window.storageService.getSettings();
       activeShift = window.storageService.startShift({
         initialCash: 0,
@@ -90,28 +198,28 @@ class ContaDriverApp {
 
     // Reset styles
     [btnDash, btnRep, btnHist].forEach(btn => {
-      btn.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+      if (btn) btn.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
     });
 
-    vDash.classList.add('hidden');
-    vRep.classList.add('hidden');
-    vHist.classList.add('hidden');
+    if (vDash) vDash.classList.add('hidden');
+    if (vRep) vRep.classList.add('hidden');
+    if (vHist) vHist.classList.add('hidden');
 
     if (tabName === 'dashboard') {
-      vDash.classList.remove('hidden');
-      btnDash.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      if (vDash) vDash.classList.remove('hidden');
+      if (btnDash) btnDash.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
       this.refreshDashboard();
     } else if (tabName === 'reports') {
-      vRep.classList.remove('hidden');
-      btnRep.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      if (vRep) vRep.classList.remove('hidden');
+      if (btnRep) btnRep.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
       this.refreshReports();
     } else if (tabName === 'history') {
-      vHist.classList.remove('hidden');
-      btnHist.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
+      if (vHist) vHist.classList.remove('hidden');
+      if (btnHist) btnHist.className = 'tab-button flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-didi text-white shadow-md transition';
       this.refreshHistory();
     }
 
-    lucide.createIcons();
+    safeCreateIcons();
   }
 
   // --- REFRESH EVERYTHING ---
@@ -129,11 +237,11 @@ class ContaDriverApp {
     const statusTextEl = document.getElementById('shiftStatusText');
 
     if (activeShift) {
-      baseEl.textContent = `$${(activeShift.initialCash || 0).toLocaleString()}`;
-      statusTextEl.textContent = `Turno de hoy (${activeShift.date})`;
+      if (baseEl) baseEl.textContent = `$${(activeShift.initialCash || 0).toLocaleString()}`;
+      if (statusTextEl) statusTextEl.textContent = `Turno de hoy (${activeShift.date})`;
     } else {
-      baseEl.textContent = '$0';
-      statusTextEl.textContent = 'Sin turno activo';
+      if (baseEl) baseEl.textContent = '$0';
+      if (statusTextEl) statusTextEl.textContent = 'Sin turno activo';
     }
   }
 
@@ -149,20 +257,19 @@ class ContaDriverApp {
     const todayData = window.reportsService.getFilteredData('today');
     const metrics = window.reportsService.calculateMetrics(todayData);
 
-    // Cálculos cruciales:
-    // 1. Dinero en Bolsillo = Base Inicial + Efectivo neto entrado por viajes - Gastos pagados en efectivo
+    // 1. Dinero en Bolsillo
     const pocketCashNow = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
 
-    // 2. Facturado por la App (Tarifas DiDi de todos los viajes de hoy)
+    // 2. Facturado por la App
     const totalAppFare = metrics.totalAppFare;
 
     // 3. Propinas
     const totalTips = metrics.totalTips;
 
-    // 4. Ganancia Bruta (App + Propinas)
+    // 4. Ganancia Bruta
     const grossEarnings = metrics.grossEarnings;
 
-    // 5. Ganancia Neta (Bruto - Gastos)
+    // 5. Ganancia Neta
     const netProfit = metrics.netProfit;
 
     // Actualizar elementos del Dashboard
@@ -222,7 +329,6 @@ class ContaDriverApp {
     const countEl = document.getElementById('dashTodayCount');
     if (!listEl) return;
 
-    // Combine trips and expenses, sorted by timestamp descending
     const combined = [
       ...todayData.trips.map(t => ({ ...t, _type: 'trip' })),
       ...todayData.expenses.map(e => ({ ...e, _type: 'expense' }))
@@ -237,7 +343,7 @@ class ContaDriverApp {
           Aún no has registrado viajes ni gastos hoy.<br>Presiona los botones naranjas o rojos de arriba para comenzar.
         </div>
       `;
-      lucide.createIcons();
+      safeCreateIcons();
       return;
     }
 
@@ -274,7 +380,6 @@ class ContaDriverApp {
           </div>
         `;
       } else {
-        // Gasto
         const catInfo = this.categories.find(c => c.id === item.category) || { label: 'Gasto', icon: 'tag' };
         const isCash = item.paymentMethod === 'cash';
 
@@ -303,7 +408,7 @@ class ContaDriverApp {
       }
     }).join('');
 
-    lucide.createIcons();
+    safeCreateIcons();
   }
 
   // --- TRIP MODAL & LOGIC ---
@@ -315,16 +420,20 @@ class ContaDriverApp {
       isExact: false
     };
 
-    document.getElementById('inputAppFare').value = '';
-    document.getElementById('inputAmountReceived').value = '';
-    document.getElementById('inputTripNotes').value = '';
+    const inputFare = document.getElementById('inputAppFare');
+    const inputReceived = document.getElementById('inputAmountReceived');
+    const inputNotes = document.getElementById('inputTripNotes');
+
+    if (inputFare) inputFare.value = '';
+    if (inputReceived) inputReceived.value = '';
+    if (inputNotes) inputNotes.value = '';
     
     this.setTripPaymentType('cash');
     this.updateTripLivePreview();
 
     this.showModal('modalTrip');
     setTimeout(() => {
-      document.getElementById('inputAppFare').focus();
+      if (inputFare) inputFare.focus();
     }, 200);
   }
 
@@ -336,24 +445,23 @@ class ContaDriverApp {
     const cashSection = document.getElementById('cashPaymentSection');
 
     if (type === 'cash') {
-      btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition';
-      btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
-      cashSection.classList.remove('hidden');
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition';
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
+      if (cashSection) cashSection.classList.remove('hidden');
     } else {
-      btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-amber-500 bg-amber-950/40 text-amber-300 font-bold text-sm flex items-center justify-center gap-2 transition';
-      btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
-      cashSection.classList.add('hidden');
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-amber-500 bg-amber-950/40 text-amber-300 font-bold text-sm flex items-center justify-center gap-2 transition';
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 hover:border-slate-500 transition';
+      if (cashSection) cashSection.classList.add('hidden');
     }
 
     this.updateTripLivePreview();
   }
 
   onTripFareInput() {
-    const fare = parseFloat(document.getElementById('inputAppFare').value) || 0;
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
     const receivedInput = document.getElementById('inputAmountReceived');
     
-    // Si estaba marcado como pago exacto o recibido vacío, sincronizar automáticamente
-    if (this.tripForm.isExact || !receivedInput.value) {
+    if (receivedInput && (this.tripForm.isExact || !receivedInput.value)) {
       receivedInput.value = fare > 0 ? fare : '';
     }
 
@@ -365,13 +473,12 @@ class ContaDriverApp {
     this.updateTripLivePreview();
   }
 
-  // Botón "Pago Exacto" requerido por el usuario
   setExactPayment() {
     window.feedbackService.playClick();
-    const fare = parseFloat(document.getElementById('inputAppFare').value) || 0;
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
     const receivedInput = document.getElementById('inputAmountReceived');
     
-    receivedInput.value = fare > 0 ? fare : '';
+    if (receivedInput) receivedInput.value = fare > 0 ? fare : '';
     this.tripForm.isExact = true;
     this.updateTripLivePreview();
     this.showToast('Marcado como Pago Exacto');
@@ -380,7 +487,7 @@ class ContaDriverApp {
   quickAddBill(billValue) {
     window.feedbackService.playClick();
     const receivedInput = document.getElementById('inputAmountReceived');
-    receivedInput.value = billValue;
+    if (receivedInput) receivedInput.value = billValue;
     this.tripForm.isExact = false;
     this.updateTripLivePreview();
   }
@@ -392,20 +499,20 @@ class ContaDriverApp {
     const btnChange = document.getElementById('btnDiffIsChange');
 
     if (decision === 'tip') {
-      btnTip.className = 'p-2 rounded-lg bg-amber-500/20 border-2 border-amber-500 text-amber-300 font-bold text-[11px] text-center flex flex-col items-center';
-      btnChange.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
+      if (btnTip) btnTip.className = 'p-2 rounded-lg bg-amber-500/20 border-2 border-amber-500 text-amber-300 font-bold text-[11px] text-center flex flex-col items-center';
+      if (btnChange) btnChange.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
     } else {
-      btnChange.className = 'p-2 rounded-lg bg-blue-500/20 border-2 border-blue-500 text-blue-300 font-bold text-[11px] text-center flex flex-col items-center';
-      btnTip.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
+      if (btnChange) btnChange.className = 'p-2 rounded-lg bg-blue-500/20 border-2 border-blue-500 text-blue-300 font-bold text-[11px] text-center flex flex-col items-center';
+      if (btnTip) btnTip.className = 'p-2 rounded-lg bg-slate-700/60 border-2 border-transparent text-slate-300 font-semibold text-[11px] text-center flex flex-col items-center hover:bg-slate-700';
     }
 
     this.updateTripLivePreview();
   }
 
   updateTripLivePreview() {
-    const fare = parseFloat(document.getElementById('inputAppFare').value) || 0;
+    const fare = parseFloat(document.getElementById('inputAppFare')?.value) || 0;
     const isCash = this.tripForm.paymentType === 'cash';
-    let received = parseFloat(document.getElementById('inputAmountReceived').value) || 0;
+    let received = parseFloat(document.getElementById('inputAmountReceived')?.value) || 0;
 
     const previewApp = document.getElementById('previewAppFare');
     const previewPocket = document.getElementById('previewPocketCash');
@@ -417,33 +524,31 @@ class ContaDriverApp {
     let pocketDelta = 0;
 
     if (!isCash) {
-      // Tarjeta: bolsillo no recibe efectivo físico
       pocketDelta = 0;
-      tripDiffNotice.classList.add('hidden');
+      if (tripDiffNotice) tripDiffNotice.classList.add('hidden');
     } else {
-      // Si el cliente dio más de lo que marca la app (ej: tarifa 80, dio 100)
       if (received > fare && fare > 0) {
         const diff = received - fare;
-        tripDiffNotice.classList.remove('hidden');
-        diffText.textContent = `+$${diff.toFixed(2)}`;
+        if (tripDiffNotice) tripDiffNotice.classList.remove('hidden');
+        if (diffText) diffText.textContent = `+$${diff.toFixed(2)}`;
 
         if (this.tripForm.diffDecision === 'tip') {
           tip = diff;
           changeGiven = 0;
-          pocketDelta = received; // Se queda con el billete completo de $100
+          pocketDelta = received;
         } else {
           tip = 0;
           changeGiven = diff;
-          pocketDelta = fare; // Devolvió los $20, entra al bolsillo la tarifa de $80
+          pocketDelta = fare;
         }
       } else {
-        tripDiffNotice.classList.add('hidden');
+        if (tripDiffNotice) tripDiffNotice.classList.add('hidden');
         pocketDelta = received > 0 ? received : fare;
       }
     }
 
-    previewApp.textContent = `$${fare.toFixed(2)}`;
-    previewPocket.textContent = isCash ? `+$${pocketDelta.toFixed(2)}` : '$0.00 (Tarjeta)';
+    if (previewApp) previewApp.textContent = `$${fare.toFixed(2)}`;
+    if (previewPocket) previewPocket.textContent = isCash ? `+$${pocketDelta.toFixed(2)}` : '$0.00 (Tarjeta)';
 
     return { fare, received, tip, changeGiven, pocketDelta, isCash };
   }
@@ -452,11 +557,11 @@ class ContaDriverApp {
     const calc = this.updateTripLivePreview();
     if (calc.fare <= 0) {
       this.showToast('Por favor ingresa el valor de la tarifa DiDi', 'error');
-      document.getElementById('inputAppFare').focus();
+      document.getElementById('inputAppFare')?.focus();
       return;
     }
 
-    const notes = document.getElementById('inputTripNotes').value.trim();
+    const notes = document.getElementById('inputTripNotes')?.value.trim() || '';
 
     window.storageService.addTrip({
       appFare: calc.fare,
@@ -490,7 +595,7 @@ class ContaDriverApp {
       </button>
     `).join('');
 
-    lucide.createIcons();
+    safeCreateIcons();
   }
 
   selectExpenseCategory(catId) {
@@ -501,13 +606,16 @@ class ContaDriverApp {
 
   openExpenseModal() {
     window.feedbackService.playClick();
-    document.getElementById('inputExpenseAmount').value = '';
-    document.getElementById('inputExpenseDesc').value = '';
+    const inputAmount = document.getElementById('inputExpenseAmount');
+    const inputDesc = document.getElementById('inputExpenseDesc');
+    if (inputAmount) inputAmount.value = '';
+    if (inputDesc) inputDesc.value = '';
+
     this.setExpensePaymentMethod('cash');
     this.selectExpenseCategory('gasoline');
     this.showModal('modalExpense');
     setTimeout(() => {
-      document.getElementById('inputExpenseAmount').focus();
+      if (inputAmount) inputAmount.focus();
     }, 200);
   }
 
@@ -519,27 +627,31 @@ class ContaDriverApp {
     const impactText = document.getElementById('expenseCashImpactText');
 
     if (method === 'cash') {
-      btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-rose-500 bg-rose-950/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5';
-      btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
-      impactText.textContent = '* Descontará directamente del dinero físico que tienes en los bolsillos.';
-      impactText.className = 'text-[10px] text-rose-400 mt-1';
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-rose-500 bg-rose-950/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5';
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
+      if (impactText) {
+        impactText.textContent = '* Descontará directamente del dinero físico que tienes en los bolsillos.';
+        impactText.className = 'text-[10px] text-rose-400 mt-1';
+      }
     } else {
-      btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-950/40 text-blue-300 font-bold text-xs flex items-center justify-center gap-1.5';
-      btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
-      impactText.textContent = '* Pagado con tarjeta/banco: se cuenta como gasto, pero NO resta del efectivo que traes en mano.';
-      impactText.className = 'text-[10px] text-blue-400 mt-1';
+      if (btnCard) btnCard.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-950/40 text-blue-300 font-bold text-xs flex items-center justify-center gap-1.5';
+      if (btnCash) btnCash.className = 'btn-quick-touch py-2.5 px-3 rounded-xl border-2 border-dark-border bg-dark-card text-slate-400 font-semibold text-xs flex items-center justify-center gap-1.5 hover:border-slate-500';
+      if (impactText) {
+        impactText.textContent = '* Pagado con tarjeta/banco: se cuenta como gasto, pero NO resta del efectivo que traes en mano.';
+        impactText.className = 'text-[10px] text-blue-400 mt-1';
+      }
     }
   }
 
   saveExpense() {
-    const amount = parseFloat(document.getElementById('inputExpenseAmount').value) || 0;
+    const amount = parseFloat(document.getElementById('inputExpenseAmount')?.value) || 0;
     if (amount <= 0) {
       this.showToast('Ingresa un monto de gasto válido', 'error');
-      document.getElementById('inputExpenseAmount').focus();
+      document.getElementById('inputExpenseAmount')?.focus();
       return;
     }
 
-    const desc = document.getElementById('inputExpenseDesc').value.trim();
+    const desc = document.getElementById('inputExpenseDesc')?.value.trim() || '';
 
     window.storageService.addExpense({
       amount: amount,
@@ -562,24 +674,20 @@ class ContaDriverApp {
     const inputGoal = document.getElementById('inputShiftGoal');
     const inputOdo = document.getElementById('inputShiftOdometer');
 
-    if (activeShift) {
-      inputBase.value = activeShift.initialCash || '';
-      inputGoal.value = activeShift.dailyGoal || 1500;
-      inputOdo.value = activeShift.initialOdometer || '';
-    } else {
-      inputBase.value = '';
-      inputGoal.value = 1500;
-      inputOdo.value = '';
-    }
+    if (inputBase) inputBase.value = activeShift ? (activeShift.initialCash || '') : '';
+    if (inputGoal) inputGoal.value = activeShift ? (activeShift.dailyGoal || 1500) : 1500;
+    if (inputOdo) inputOdo.value = activeShift ? (activeShift.initialOdometer || '') : '';
 
     this.showModal('modalShift');
-    setTimeout(() => inputBase.focus(), 200);
+    setTimeout(() => {
+      if (inputBase) inputBase.focus();
+    }, 200);
   }
 
   saveShiftConfig() {
-    const baseAmount = parseFloat(document.getElementById('inputShiftBaseCash').value) || 0;
-    const goal = parseFloat(document.getElementById('inputShiftGoal').value) || 1500;
-    const odo = parseFloat(document.getElementById('inputShiftOdometer').value) || 0;
+    const baseAmount = parseFloat(document.getElementById('inputShiftBaseCash')?.value) || 0;
+    const goal = parseFloat(document.getElementById('inputShiftGoal')?.value) || 1500;
+    const odo = parseFloat(document.getElementById('inputShiftOdometer')?.value) || 0;
 
     let activeShift = window.storageService.getActiveShift();
     if (!activeShift) {
@@ -613,16 +721,24 @@ class ContaDriverApp {
 
     const pocketExpected = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
 
-    document.getElementById('arqBaseCash').textContent = `$${initialCash.toLocaleString()}`;
-    document.getElementById('arqTripsCash').textContent = `+$${metrics.totalCashInPocket.toLocaleString()}`;
-    document.getElementById('arqExpensesCash').textContent = `-$${metrics.cashExpenses.toLocaleString()}`;
-    document.getElementById('arqExpectedCash').textContent = `$${pocketExpected.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+    const arqBase = document.getElementById('arqBaseCash');
+    const arqTrips = document.getElementById('arqTripsCash');
+    const arqExpenses = document.getElementById('arqExpensesCash');
+    const arqExpected = document.getElementById('arqExpectedCash');
+    const inputCounted = document.getElementById('inputCountedCash');
+    const resBox = document.getElementById('arqResultBox');
 
-    document.getElementById('inputCountedCash').value = '';
-    document.getElementById('arqResultBox').classList.add('hidden');
+    if (arqBase) arqBase.textContent = `$${initialCash.toLocaleString()}`;
+    if (arqTrips) arqTrips.textContent = `+$${metrics.totalCashInPocket.toLocaleString()}`;
+    if (arqExpenses) arqExpenses.textContent = `-$${metrics.cashExpenses.toLocaleString()}`;
+    if (arqExpected) arqExpected.textContent = `$${pocketExpected.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+    if (inputCounted) inputCounted.value = '';
+    if (resBox) resBox.classList.add('hidden');
 
     this.showModal('modalArqueo');
-    setTimeout(() => document.getElementById('inputCountedCash').focus(), 200);
+    setTimeout(() => {
+      if (inputCounted) inputCounted.focus();
+    }, 200);
   }
 
   calculateArqueoDiff() {
@@ -633,32 +749,32 @@ class ContaDriverApp {
     const expected = initialCash + metrics.totalCashInPocket - metrics.cashExpenses;
 
     const countedInput = document.getElementById('inputCountedCash');
-    const counted = parseFloat(countedInput.value);
+    const counted = parseFloat(countedInput?.value);
 
     const resBox = document.getElementById('arqResultBox');
     const resTitle = document.getElementById('arqResultTitle');
     const resDetail = document.getElementById('arqResultDetail');
 
     if (isNaN(counted)) {
-      resBox.classList.add('hidden');
+      if (resBox) resBox.classList.add('hidden');
       return;
     }
 
-    resBox.classList.remove('hidden');
+    if (resBox) resBox.classList.remove('hidden');
     const diff = counted - expected;
 
     if (Math.abs(diff) < 0.05) {
-      resBox.className = 'p-3 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 text-center space-y-1';
-      resTitle.textContent = '✨ ¡Cuadre Perfecto!';
-      resDetail.textContent = 'El efectivo que contaste coincide exactamente con las cuentas registradas.';
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = '✨ ¡Cuadre Perfecto!';
+      if (resDetail) resDetail.textContent = 'El efectivo que contaste coincide exactamente con las cuentas registradas.';
     } else if (diff > 0) {
-      resBox.className = 'p-3 rounded-xl border border-amber-500/50 bg-amber-950/40 text-amber-300 text-center space-y-1';
-      resTitle.textContent = `💵 Te sobran: +$${diff.toFixed(2)}`;
-      resDetail.textContent = 'Tienes más dinero en la mano de lo calculado. Posiblemente recibiste alguna propina que no registraste.';
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-amber-500/50 bg-amber-950/40 text-amber-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = `💵 Te sobran: +$${diff.toFixed(2)}`;
+      if (resDetail) resDetail.textContent = 'Tienes más dinero en la mano de lo calculado. Posiblemente recibiste alguna propina que no registraste.';
     } else {
-      resBox.className = 'p-3 rounded-xl border border-rose-500/50 bg-rose-950/40 text-rose-300 text-center space-y-1';
-      resTitle.textContent = `⚠️ Te faltan: -$${Math.abs(diff).toFixed(2)}`;
-      resDetail.textContent = 'Tienes menos dinero en la mano del calculado. Revisa si tuviste algún gasto en efectivo no anotado o diste cambio de más.';
+      if (resBox) resBox.className = 'p-3 rounded-xl border border-rose-500/50 bg-rose-950/40 text-rose-300 text-center space-y-1';
+      if (resTitle) resTitle.textContent = `⚠️ Te faltan: -$${Math.abs(diff).toFixed(2)}`;
+      if (resDetail) resDetail.textContent = 'Tienes menos dinero en la mano del calculado. Revisa si tuviste algún gasto en efectivo no anotado o diste cambio de más.';
     }
   }
 
@@ -671,7 +787,7 @@ class ContaDriverApp {
     }
 
     const countedInput = document.getElementById('inputCountedCash');
-    const counted = parseFloat(countedInput.value) || null;
+    const counted = parseFloat(countedInput?.value) || null;
 
     window.storageService.closeShift(activeShift.id, {
       countedCash: counted,
@@ -719,7 +835,6 @@ class ContaDriverApp {
     const data = window.reportsService.getFilteredData(this.activeReportPeriod);
     const metrics = window.reportsService.calculateMetrics(data);
 
-    // Label de rango
     const rangeLabel = document.getElementById('reportDateRangeLabel');
     if (rangeLabel) {
       if (this.activeReportPeriod === 'all') {
@@ -731,26 +846,32 @@ class ContaDriverApp {
       }
     }
 
-    // KPI cards
-    document.getElementById('repAppTotal').textContent = `$${metrics.totalAppFare.toLocaleString()}`;
-    document.getElementById('repAppTrips').textContent = `${metrics.tripCount} viajes (${metrics.cashTripsCount} cash / ${metrics.cardTripsCount} tarjeta)`;
-    document.getElementById('repTipsTotal').textContent = `+$${metrics.totalTips.toLocaleString()}`;
-    document.getElementById('repExpensesTotal').textContent = `-$${metrics.totalExpenses.toLocaleString()}`;
-    document.getElementById('repCashExpenses').textContent = `$${metrics.cashExpenses.toLocaleString()} en efectivo`;
+    const rApp = document.getElementById('repAppTotal');
+    const rTrips = document.getElementById('repAppTrips');
+    const rTips = document.getElementById('repTipsTotal');
+    const rExp = document.getElementById('repExpensesTotal');
+    const rCashExp = document.getElementById('repCashExpenses');
+    const rNet = document.getElementById('repNetProfit');
+    const rMargin = document.getElementById('repNetMargin');
+
+    if (rApp) rApp.textContent = `$${metrics.totalAppFare.toLocaleString()}`;
+    if (rTrips) rTrips.textContent = `${metrics.tripCount} viajes (${metrics.cashTripsCount} cash / ${metrics.cardTripsCount} tarjeta)`;
+    if (rTips) rTips.textContent = `+$${metrics.totalTips.toLocaleString()}`;
+    if (rExp) rExp.textContent = `-$${metrics.totalExpenses.toLocaleString()}`;
+    if (rCashExp) rCashExp.textContent = `$${metrics.cashExpenses.toLocaleString()} en efectivo`;
     
-    const repNetProfit = document.getElementById('repNetProfit');
-    repNetProfit.textContent = `$${metrics.netProfit.toLocaleString()}`;
-    repNetProfit.className = `text-xl font-black ${metrics.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'} badge-currency`;
+    if (rNet) {
+      rNet.textContent = `$${metrics.netProfit.toLocaleString()}`;
+      rNet.className = `text-xl font-black ${metrics.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'} badge-currency`;
+    }
 
-    document.getElementById('repNetMargin').textContent = `${metrics.profitMargin.toFixed(1)}% de margen neto`;
+    if (rMargin) rMargin.textContent = `${metrics.profitMargin.toFixed(1)}% de margen neto`;
 
-    // Charts labels
     const chartNetVal = document.getElementById('chartLabelNetVal');
     const chartExpVal = document.getElementById('chartLabelExpVal');
     if (chartNetVal) chartNetVal.textContent = `$${metrics.netProfit.toLocaleString()} (${metrics.profitMargin.toFixed(1)}%)`;
     if (chartExpVal) chartExpVal.textContent = `$${metrics.totalExpenses.toLocaleString()} (${metrics.expenseRatio.toFixed(1)}%)`;
 
-    // Render Chart.js
     window.reportsService.renderCharts(metrics, data);
   }
 
@@ -764,12 +885,12 @@ class ContaDriverApp {
     const btnExp = document.getElementById('histFilterExpenses');
 
     [btnAll, btnTrips, btnExp].forEach(b => {
-      b.className = 'px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white';
+      if (b) b.className = 'px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white';
     });
 
-    if (filter === 'all') btnAll.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
-    if (filter === 'trips') btnTrips.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
-    if (filter === 'expenses') btnExp.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+    if (filter === 'all' && btnAll) btnAll.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+    if (filter === 'trips' && btnTrips) btnTrips.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
+    if (filter === 'expenses' && btnExp) btnExp.className = 'px-3 py-1.5 rounded-md text-xs font-bold bg-didi text-white';
 
     this.refreshHistory();
   }
@@ -800,7 +921,7 @@ class ContaDriverApp {
           No hay movimientos registrados en este filtro.
         </div>
       `;
-      lucide.createIcons();
+      safeCreateIcons();
       return;
     }
 
@@ -834,7 +955,7 @@ class ContaDriverApp {
                 <span class="block text-sm font-extrabold text-white badge-currency">$${(Number(item.appFare) + Number(item.tip)).toLocaleString()}</span>
                 <span class="text-[10px] text-slate-500">App: $${Number(item.appFare).toLocaleString()}</span>
               </div>
-              <button onclick="app.deleteItem('trip', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+              <button onclick="deleteItem('trip', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
@@ -863,7 +984,7 @@ class ContaDriverApp {
                 <span class="block text-sm font-extrabold text-rose-400 badge-currency">-$${Number(item.amount).toLocaleString()}</span>
                 <span class="text-[10px] text-slate-500">${isCash ? 'Bolsillo' : 'Tarjeta'}</span>
               </div>
-              <button onclick="app.deleteItem('expense', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+              <button onclick="deleteItem('expense', '${item.id}')" title="Eliminar registro" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
@@ -872,7 +993,7 @@ class ContaDriverApp {
       }
     }).join('');
 
-    lucide.createIcons();
+    safeCreateIcons();
   }
 
   deleteItem(type, id) {
@@ -893,7 +1014,6 @@ class ContaDriverApp {
     let csvContent = 'data:text/csv;charset=utf-8,';
     csvContent += 'Tipo,Fecha,Hora,Tarifa_App_DiDi,Propina,Total_Viaje,Tipo_Pago,Efectivo_Bolsillo,Categoria_Gasto,Monto_Gasto,Metodo_Pago_Gasto,Descripcion_Notas\r\n';
 
-    // Agregar viajes
     data.trips.forEach(t => {
       const d = new Date(t.timestamp);
       const date = d.toISOString().split('T')[0];
@@ -902,7 +1022,6 @@ class ContaDriverApp {
       csvContent += `Viaje,${date},${time},${t.appFare},${t.tip},${total},${t.paymentType},${t.cashPocketDelta},,,,${(t.notes || '').replace(/,/g, ' ')}\r\n`;
     });
 
-    // Agregar gastos
     data.expenses.forEach(e => {
       const d = new Date(e.timestamp);
       const date = d.toISOString().split('T')[0];
@@ -913,7 +1032,7 @@ class ContaDriverApp {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `ContaDriver_Reporte_${this.activeReportPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `E&J_Profit_Reporte_${this.activeReportPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -950,7 +1069,7 @@ class ContaDriverApp {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ContaDriver_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `EJ_Profit_Backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1021,17 +1140,26 @@ class ContaDriverApp {
   }
 }
 
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new ContaDriverApp();
+// Inicialización garantizada en cualquier ciclo de vida del navegador
+window.initApp = function() {
+  if (!window.app) {
+    try {
+      window.app = new ContaDriverApp();
+    } catch (e) {
+      console.error('Initialization error:', e);
+    }
+  }
+  const b1 = document.getElementById('btnOpenShiftModal');
+  if (b1) b1.onclick = () => window.openShiftModal();
+  const b2 = document.getElementById('shiftStatusIndicator');
+  if (b2) b2.onclick = () => window.openShiftModal();
+  const b3 = document.getElementById('btnOpenSettings');
+  if (b3) b3.onclick = () => window.showModal('modalSettings');
+};
 
-  // Attach button triggers
-  const btnOpenShift = document.getElementById('btnOpenShiftModal');
-  if (btnOpenShift) btnOpenShift.addEventListener('click', () => window.app.openShiftModal());
-
-  const shiftStatusInd = document.getElementById('shiftStatusIndicator');
-  if (shiftStatusInd) shiftStatusInd.addEventListener('click', () => window.app.openShiftModal());
-
-  const btnOpenSettings = document.getElementById('btnOpenSettings');
-  if (btnOpenSettings) btnOpenSettings.addEventListener('click', () => window.app.showModal('modalSettings'));
-});
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initApp);
+} else {
+  window.initApp();
+}
+window.addEventListener('load', window.initApp);
