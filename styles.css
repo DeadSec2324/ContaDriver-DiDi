@@ -1,0 +1,111 @@
+/* css/styles.css - Estilos optimizados para choferes DiDi */
+
+:root {
+  --didi-orange: #FF7D00;
+  --didi-orange-dark: #E05600;
+  --didi-orange-light: #FFA142;
+  --bg-dark: #0B1120;
+  --surface-dark: #1E293B;
+  --surface-border: #334155;
+  --pocket-green: #10B981;
+  --danger-red: #EF4444;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B1120;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Anti-glare driver mode adjustments */
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, textarea, select {
+  user-select: text;
+}
+
+/* Quick Touch Buttons for Driver Phone Mount */
+.btn-quick-touch {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  active:scale(0.96);
+}
+
+.btn-quick-touch:active {
+  transform: scale(0.96);
+}
+
+/* Pulse animation for active shift status */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+.shift-live-pulse {
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+/* Card Glows */
+.pocket-glow {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2);
+}
+
+.didi-glow {
+  box-shadow: 0 0 25px -5px rgba(255, 125, 0, 0.25);
+}
+
+/* Modal Transitions */
+.modal-overlay {
+  transition: opacity 0.2s ease-out;
+}
+
+.modal-content {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+}
+
+.modal-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.modal-hidden .modal-content {
+  transform: scale(0.95) translateY(12px);
+}
+
+/* Number badge */
+.badge-currency {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Glassmorphism subtle */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
